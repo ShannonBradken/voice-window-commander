@@ -1,0 +1,390 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+button {
+  background: #4a4a8a;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #5a5a9a;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+#auto-refresh-btn.active {
+  background: #3a6a3a;
+}
+
+#auto-refresh-btn.active:hover {
+  background: #4a7a4a;
+}
+
+#status {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #666;
+  cursor: help;
+  z-index: 1000;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+#status.connected {
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+#status.disconnected {
+  background: #f87171;
+  box-shadow: 0 0 8px #f87171;
+}
+
+#windows-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.window-card {
+  background: #252542;
+  border: 1px solid #3a3a5c;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.window-card:hover {
+  background: #2d2d52;
+  border-color: #5a5a9a;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-content {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-content:hover {
+  opacity: 0.8;
+}
+
+.window-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-mic-btn {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 50%;
+  background: #3a6a3a;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.card-mic-btn svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.card-mic-btn:hover {
+  background: #4a7a4a;
+  transform: scale(1.05);
+}
+
+.card-mic-btn:active {
+  transform: scale(0.95);
+}
+
+.card-mic-btn.recording {
+  background: #c0392b;
+  animation: pulse 1s infinite;
+}
+
+.card-clear-btn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  background: #c0392b;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+.card-clear-btn svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.card-clear-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.card-clear-btn:hover {
+  background: #e74c3c;
+  transform: scale(1.05);
+}
+
+.card-clear-btn:active {
+  transform: scale(0.95);
+}
+
+.card-add-btn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  background: #2980b9;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+.card-add-btn svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.card-add-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.card-add-btn:hover {
+  background: #3498db;
+  transform: scale(1.05);
+}
+
+.card-add-btn:active {
+  transform: scale(0.95);
+}
+
+.card-add-btn.recording {
+  background: #c0392b;
+  animation: pulse 1s infinite;
+}
+
+.card-mic-btn.submit-mode {
+  background: #27ae60;
+}
+
+.card-mic-btn.submit-mode:hover {
+  background: #2ecc71;
+}
+
+.card-mic-btn.processing {
+  background: #f39c12;
+  cursor: wait;
+}
+
+.card-mic-btn.processing:hover {
+  background: #f39c12;
+  transform: none;
+}
+
+.card-mic-btn.processing svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.card-text-area {
+  border-top: 1px solid #3a3a5c;
+  padding-top: 12px;
+}
+
+.card-text {
+  min-height: 40px;
+  padding: 10px;
+  background: #1a1a2e;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #ddd;
+  word-wrap: break-word;
+}
+
+.card-text:empty::before {
+  content: 'Hold mic to speak...';
+  color: #666;
+  font-style: italic;
+}
+
+.window-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.window-path {
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.window-bounds {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+/* Voice Section */
+#voice-section {
+  background: #252542;
+  border: 1px solid #3a3a5c;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+#voice-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+#record-btn {
+  background: #3a6a3a;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+#record-btn:hover {
+  background: #4a7a4a;
+}
+
+#record-btn.recording {
+  background: #8a3a3a;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+#recording-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #444;
+  transition: background 0.2s;
+}
+
+#recording-indicator.active {
+  background: #e74c3c;
+  box-shadow: 0 0 10px #e74c3c;
+}
+
+#transcription {
+  border-top: 1px solid #3a3a5c;
+  padding-top: 16px;
+}
+
+#transcription-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+#transcription-text {
+  font-size: 1.1rem;
+  min-height: 1.5em;
+  color: #fff;
+}

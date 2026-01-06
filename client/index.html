@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Window Manager</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Windows</h1>
+      <button id="auto-refresh-btn">Auto-Refresh: Off</button>
+    </header>
+    <div id="status" title="Connecting..."></div>
+
+    <section id="voice-section">
+      <div id="voice-controls">
+        <button id="record-btn">Hold to Talk</button>
+        <div id="recording-indicator"></div>
+      </div>
+      <div id="transcription">
+        <div id="transcription-label">Transcription:</div>
+        <div id="transcription-text"></div>
+      </div>
+    </section>
+
+    <div id="windows-grid"></div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
