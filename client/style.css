@@ -104,25 +104,21 @@ button:disabled {
 
 #status {
   position: fixed;
-  top: 16px;
-  right: 16px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
   background: #666;
-  cursor: help;
-  z-index: 1000;
-  transition: background 0.3s, box-shadow 0.3s;
+  z-index: 9999;
+  transition: background 0.3s;
 }
 
 #status.connected {
   background: #4ade80;
-  box-shadow: 0 0 8px #4ade80;
 }
 
 #status.disconnected {
   background: #f87171;
-  box-shadow: 0 0 8px #f87171;
 }
 
 /* AI Query Section */

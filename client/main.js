@@ -148,6 +148,11 @@ function handleMessage(msg) {
       responseEl.innerHTML = marked.parse(msg.text);
       responseEl.classList.remove('loading');
       responseContainer.classList.add('visible');
+      // Vibrate phone and play ding to notify response received
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+      playDing();
       break;
 
     case 'aiError':
@@ -820,6 +825,40 @@ function copyTranscription() {
       copyBtn.classList.add('copied');
       setTimeout(() => copyBtn.classList.remove('copied'), 1500);
     });
+  }
+}
+
+// Shared audio context for notifications
+let audioContext = null;
+
+// Play a short ding notification sound
+function playDing() {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // Resume if suspended (required on mobile after user gesture)
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 880; // A5 note
+    oscillator.type = 'sine';
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    // Audio not supported or blocked
   }
 }
 
