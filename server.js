@@ -342,9 +342,11 @@ wss.on('connection', (ws) => {
         const text = await transcribeAudio(message);
         console.log('Transcription:', text);
 
-        // Check if this is an AI query
+        // Check if this is an AI query or terminal voice
         if (windowId === 'ai-query') {
           ws.send(JSON.stringify({ type: 'aiTranscription', text }));
+        } else if (windowId === 'terminal-voice') {
+          ws.send(JSON.stringify({ type: 'terminalTranscription', text }));
         } else {
           ws.send(JSON.stringify({ type: 'transcription', text, windowId }));
         }
@@ -352,6 +354,8 @@ wss.on('connection', (ws) => {
         console.error('Transcription error:', err);
         if (windowId === 'ai-query') {
           ws.send(JSON.stringify({ type: 'aiError', error: err.message }));
+        } else if (windowId === 'terminal-voice') {
+          ws.send(JSON.stringify({ type: 'terminalTranscriptionError', error: err.message }));
         } else {
           ws.send(JSON.stringify({ type: 'transcriptionError', error: err.message, windowId }));
         }

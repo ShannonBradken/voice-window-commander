@@ -203,24 +203,64 @@ button:disabled {
   animation: spin 1s linear infinite;
 }
 
-.ai-response {
+.ai-response-container {
+  position: relative;
   margin-top: 12px;
+  display: none;
+}
+
+.ai-response-container.visible {
+  display: block;
+}
+
+.ai-response {
   padding: 12px;
+  padding-right: 50px;
   background: #1a1a2e;
   border-radius: 8px;
   font-size: 0.95rem;
   color: #ddd;
   line-height: 1.6;
-  display: none;
 }
 
-.ai-response.visible {
-  display: block;
+.ai-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #4a4a8a;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.ai-copy-btn svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.ai-copy-btn:hover {
+  background: #5a5a9a;
+}
+
+.ai-copy-btn.copied {
+  background: #27ae60;
 }
 
 .ai-response.loading {
   color: #888;
   font-style: italic;
+}
+
+.ai-response.loading + .ai-copy-btn {
+  display: none;
 }
 
 /* Markdown styles within AI response */
@@ -538,15 +578,15 @@ button:disabled {
   border-top: 1px solid #3a3a5c;
   padding-top: 12px;
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .card-buttons {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-shrink: 0;
+  justify-content: flex-end;
   position: relative;
   z-index: 10;
 }
@@ -564,9 +604,28 @@ button:disabled {
 }
 
 .card-text:empty::before {
-  content: 'Hold mic to speak...';
+  content: 'Tap mic to speak...';
   color: #666;
   font-style: italic;
+}
+
+.card-text.transcribing::before {
+  content: 'Transcribing...';
+  color: #f39c12;
+  font-style: italic;
+}
+
+.card-text.transcribing::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid #f39c12;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
 }
 
 .window-title {
@@ -810,6 +869,25 @@ button:disabled {
   content: 'Tap mic to speak...';
   color: #666;
   font-style: italic;
+}
+
+.detail-voice-bar .detail-card-text.transcribing::before {
+  content: 'Transcribing...';
+  color: #f39c12;
+  font-style: italic;
+}
+
+.detail-voice-bar .detail-card-text.transcribing::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid #f39c12;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
 }
 
 .detail-voice-buttons {
@@ -1322,10 +1400,11 @@ button:disabled {
 }
 
 .new-terminal-btn,
-.close-terminal-panel-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+.close-terminal-panel-btn,
+.terminal-mic-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1348,10 +1427,146 @@ button:disabled {
   color: white;
 }
 
+.terminal-mic-btn:hover {
+  background: #3a6a3a;
+  color: white;
+}
+
+.terminal-mic-btn.recording {
+  background: #c0392b;
+  color: white;
+  animation: pulse 1s infinite;
+}
+
+.terminal-mic-btn.processing {
+  background: #f39c12;
+  color: white;
+}
+
+.terminal-mic-btn.processing svg {
+  animation: spin 1s linear infinite;
+}
+
 .new-terminal-btn svg,
-.close-terminal-panel-btn svg {
+.close-terminal-panel-btn svg,
+.terminal-mic-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Terminal Voice Bar */
+.terminal-voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #3a3a5c;
+}
+
+.terminal-voice-text {
+  flex: 1;
+  min-height: 36px;
+  padding: 8px 12px;
+  background: #0d0d1a;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #ddd;
+  word-wrap: break-word;
+}
+
+.terminal-voice-text:empty::before {
+  content: 'Tap mic to speak...';
+  color: #666;
+  font-style: italic;
+}
+
+.terminal-voice-text.transcribing::before {
+  content: 'Transcribing...';
+  color: #f39c12;
+  font-style: italic;
+}
+
+.terminal-voice-text.transcribing::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid #f39c12;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+}
+
+.terminal-voice-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.terminal-clear-btn,
+.terminal-add-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+.terminal-clear-btn {
+  background: #c0392b;
+}
+
+.terminal-add-btn {
+  background: #2980b9;
+}
+
+.terminal-clear-btn.visible,
+.terminal-add-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.terminal-clear-btn:hover {
+  background: #e74c3c;
+  transform: scale(1.05);
+}
+
+.terminal-add-btn:hover {
+  background: #3498db;
+  transform: scale(1.05);
+}
+
+.terminal-clear-btn svg,
+.terminal-add-btn svg {
   width: 20px;
   height: 20px;
+  color: white;
+}
+
+.terminal-add-btn.recording {
+  background: #c0392b;
+  animation: pulse 1s infinite;
+}
+
+.terminal-mic-btn.submit-mode {
+  background: #27ae60;
+}
+
+.terminal-mic-btn.submit-mode:hover {
+  background: #2ecc71;
 }
 
 .terminal-container {
@@ -1376,7 +1591,8 @@ button:disabled {
 
 /* Hide FAB when panel is open */
 .terminal-panel.visible ~ .terminal-fab,
-.terminal-panel.visible ~ .claude-fab {
+.terminal-panel.visible ~ .claude-fab,
+.terminal-panel.visible ~ .gemini-fab {
   display: none;
 }
 
@@ -1412,5 +1628,40 @@ button:disabled {
 }
 
 .claude-fab:active {
+  transform: scale(0.95);
+}
+
+/* Gemini FAB Button */
+.gemini-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 152px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #4285f4;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  transition: all 0.2s;
+  touch-action: manipulation;
+}
+
+.gemini-fab svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.gemini-fab:hover {
+  background: #5a9cff;
+  transform: scale(1.1);
+}
+
+.gemini-fab:active {
   transform: scale(0.95);
 }

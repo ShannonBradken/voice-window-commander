@@ -13,6 +13,7 @@ let activeWindowId = null;
 let activeMicBtn = null;
 let cardTexts = {}; // Store accumulated text per windowId
 let transcribingWindows = {}; // Track windows with transcription in progress
+let recordingWindowId = null; // Track which window is currently recording
 let autoRefreshEnabled = false;
 let autoRefreshInterval = null;
 let pendingCloseWindowId = null; // Window ID pending close confirmation
@@ -25,6 +26,10 @@ const terminals = new Map(); // termId -> { terminal, fitAddon, element }
 let activeTerminalId = null;
 let terminalCounter = 0;
 let pendingTerminalCommand = null; // Command to run after terminal is created
+let pendingTerminalReadOnly = false; // Whether the next terminal should be read-only
+let terminalVoiceRecording = false; // Whether we're recording voice for terminal input
+let terminalVoiceText = ''; // Accumulated voice text for terminal
+let terminalVoiceTranscribing = false; // Whether terminal voice is transcribing
 
 function connect() {
   ws = new WebSocket(WS_URL);
@@ -138,19 +143,21 @@ function handleMessage(msg) {
       aiProcessing = false;
       updateAiMicButton();
       const responseEl = document.getElementById('ai-response');
+      const responseContainer = responseEl.parentElement;
       // Render markdown to HTML
       responseEl.innerHTML = marked.parse(msg.text);
       responseEl.classList.remove('loading');
-      responseEl.classList.add('visible');
+      responseContainer.classList.add('visible');
       break;
 
     case 'aiError':
       aiProcessing = false;
       updateAiMicButton();
       const errorEl = document.getElementById('ai-response');
+      const errorContainer = errorEl.parentElement;
       errorEl.textContent = `Error: ${msg.error}`;
       errorEl.classList.remove('loading');
-      errorEl.classList.add('visible');
+      errorContainer.classList.add('visible');
       break;
 
     // Terminal messages
@@ -171,6 +178,23 @@ function handleMessage(msg) {
 
     case 'terminalError':
       console.error('Terminal error:', msg.error);
+      break;
+
+    case 'terminalTranscription':
+      // Voice transcription for terminal - accumulate text
+      terminalVoiceRecording = false;
+      terminalVoiceTranscribing = false;
+      if (msg.text) {
+        terminalVoiceText += (terminalVoiceText ? ' ' : '') + msg.text;
+      }
+      updateTerminalVoiceUI();
+      break;
+
+    case 'terminalTranscriptionError':
+      terminalVoiceRecording = false;
+      terminalVoiceTranscribing = false;
+      updateTerminalVoiceUI();
+      console.error('Terminal transcription error:', msg.error);
       break;
   }
 }
@@ -234,6 +258,7 @@ function confirmCloseWindow() {
     ws.send(JSON.stringify({ type: 'closeWindow', windowId: pendingCloseWindowId }));
   }
   hideCloseDialog();
+  hideDetailPage();
 }
 
 function displayScreenshot(screenshotData, width, height) {
@@ -357,7 +382,15 @@ function updateDetailVoiceControls(windowId) {
   const isTranscribing = transcribingWindows[windowId] === true;
 
   // Update text display
-  document.getElementById('detail-card-text').textContent = cardTexts[windowId] || '';
+  const detailCardText = document.getElementById('detail-card-text');
+  detailCardText.textContent = cardTexts[windowId] || '';
+
+  // Update transcribing state
+  if (isTranscribing) {
+    detailCardText.classList.add('transcribing');
+  } else {
+    detailCardText.classList.remove('transcribing');
+  }
 
   // Update clear button visibility
   const clearBtn = document.getElementById('detail-clear-btn');
@@ -377,21 +410,24 @@ function updateDetailVoiceControls(windowId) {
 
   // Update mic/submit button
   const micBtn = document.getElementById('detail-mic-btn');
+  const micIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+  const checkIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+
   if (hasText || isTranscribing) {
     micBtn.classList.add('submit-mode');
     if (isTranscribing) {
       micBtn.classList.add('processing');
-      micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg>`;
+      micBtn.innerHTML = micIcon;
       micBtn.disabled = true;
     } else {
       micBtn.classList.remove('processing');
-      micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+      micBtn.innerHTML = checkIcon;
       micBtn.disabled = false;
     }
   } else {
     micBtn.classList.remove('submit-mode');
     micBtn.classList.remove('processing');
-    micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+    micBtn.innerHTML = micIcon;
     micBtn.disabled = false;
   }
 }
@@ -483,6 +519,16 @@ function updateCardButtons(windowId) {
   const clearBtn = document.querySelector(`.card-clear-btn[data-window-id="${windowId}"]`);
   const micBtn = document.querySelector(`.card-mic-btn[data-window-id="${windowId}"]`);
   const addBtn = document.querySelector(`.card-add-btn[data-window-id="${windowId}"]`);
+  const cardText = document.querySelector(`.card-text[data-window-id="${windowId}"]`);
+
+  // Update card text transcribing state
+  if (cardText) {
+    if (isTranscribing) {
+      cardText.classList.add('transcribing');
+    } else {
+      cardText.classList.remove('transcribing');
+    }
+  }
 
   if (clearBtn) {
     if (hasText) {
@@ -501,25 +547,28 @@ function updateCardButtons(windowId) {
   }
 
   if (micBtn) {
+    const micIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+    const checkIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+
     if (hasText || isTranscribing) {
       // Change to submit button (or processing state)
       micBtn.classList.add('submit-mode');
       if (isTranscribing) {
-        // Show processing indicator
+        // Show spinning mic indicator
         micBtn.classList.add('processing');
-        micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg>`;
+        micBtn.innerHTML = micIcon;
         micBtn.disabled = true;
       } else {
         // Show submit tick
         micBtn.classList.remove('processing');
-        micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+        micBtn.innerHTML = checkIcon;
         micBtn.disabled = false;
       }
     } else {
       // Change to mic button
       micBtn.classList.remove('submit-mode');
       micBtn.classList.remove('processing');
-      micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+      micBtn.innerHTML = micIcon;
       micBtn.disabled = false;
     }
   }
@@ -585,9 +634,12 @@ function renderWindows() {
       clearCardText(win.id);
     };
 
+    // Check if this window is currently recording
+    const isRecording = recordingWindowId === win.id;
+
     // Add button (round blue mic) - for appending more, hidden by default
     const addBtn = document.createElement('button');
-    addBtn.className = 'card-add-btn' + (hasText ? ' visible' : '');
+    addBtn.className = 'card-add-btn' + (hasText ? ' visible' : '') + (isRecording && hasText ? ' recording' : '');
     addBtn.dataset.windowId = win.id;
     addBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
     addBtn.onclick = (e) => {
@@ -597,7 +649,7 @@ function renderWindows() {
 
     // Mic/Submit button - mic when no text, submit when has text
     const micBtn = document.createElement('button');
-    micBtn.className = 'card-mic-btn' + (hasText ? ' submit-mode' : '');
+    micBtn.className = 'card-mic-btn' + (hasText ? ' submit-mode' : '') + (isRecording && !hasText ? ' recording' : '');
     micBtn.dataset.windowId = win.id;
     if (hasText) {
       micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
@@ -612,6 +664,11 @@ function renderWindows() {
         toggleCardRecording(win.id, micBtn);
       }
     };
+
+    // Update activeMicBtn reference if this is the recording window
+    if (isRecording) {
+      activeMicBtn = hasText ? addBtn : micBtn;
+    }
 
     // Text display area with buttons
     const cardTextArea = document.createElement('div');
@@ -659,6 +716,7 @@ function refreshWindows() {
 function toggleCardRecording(windowId, btn) {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     // Stop recording - mark as transcribing
+    recordingWindowId = null;
     transcribingWindows[windowId] = true;
     updateCardButtons(windowId);
     mediaRecorder.stop();
@@ -667,6 +725,7 @@ function toggleCardRecording(windowId, btn) {
   } else if (mediaRecorder && mediaRecorder.state === 'inactive') {
     // Start recording
     activeWindowId = windowId;
+    recordingWindowId = windowId; // Track which window is recording
     activeMicBtn = btn;
     audioChunks = [];
     mediaRecorder.start();
@@ -720,6 +779,7 @@ async function initVoice() {
       }
 
       // Reset active state
+      recordingWindowId = null; // Clear recording state
       activeWindowId = null;
       activeMicBtn = null;
     };
@@ -763,16 +823,27 @@ function copyTranscription() {
   }
 }
 
+// Copy AI response
+function copyAiResponse() {
+  const responseEl = document.getElementById('ai-response');
+  const text = responseEl.textContent;
+  if (text && text !== 'Thinking...' && !text.startsWith('Error:')) {
+    navigator.clipboard.writeText(text).then(() => {
+      const copyBtn = document.getElementById('ai-copy-btn');
+      copyBtn.classList.add('copied');
+      setTimeout(() => copyBtn.classList.remove('copied'), 1500);
+    });
+  }
+}
+
 // AI Query functions
 function updateAiMicButton() {
   const micBtn = document.getElementById('ai-mic-btn');
   if (aiProcessing) {
     micBtn.classList.add('processing');
     micBtn.classList.remove('recording');
-    micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg>`;
   } else {
     micBtn.classList.remove('processing');
-    micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
   }
 }
 
@@ -790,8 +861,10 @@ function toggleAiRecording() {
 
     // Show loading state
     const responseEl = document.getElementById('ai-response');
+    const responseContainer = responseEl.parentElement;
     responseEl.textContent = 'Thinking...';
-    responseEl.classList.add('loading', 'visible');
+    responseEl.classList.add('loading');
+    responseContainer.classList.add('visible');
   } else if (mediaRecorder && mediaRecorder.state === 'inactive') {
     // Start recording for AI query
     activeWindowId = 'ai-query'; // Special marker for AI queries
@@ -802,7 +875,7 @@ function toggleAiRecording() {
 
     // Clear previous response
     document.getElementById('ai-query-text').textContent = '';
-    document.getElementById('ai-response').classList.remove('visible');
+    document.getElementById('ai-response').parentElement.classList.remove('visible');
   }
 }
 
@@ -845,9 +918,128 @@ function hideTerminalPanel() {
 function launchClaude() {
   // Set the command to run after terminal is created
   pendingTerminalCommand = 'claude --dangerously-skip-permissions';
+  pendingTerminalReadOnly = true; // Make Claude terminal read-only
   // Open terminal panel and create a new terminal
   document.getElementById('terminal-panel').classList.add('visible');
   createTerminal();
+}
+
+function launchGemini() {
+  // Set the command to run after terminal is created
+  pendingTerminalCommand = 'gemini';
+  pendingTerminalReadOnly = true; // Make Gemini terminal read-only
+  // Open terminal panel and create a new terminal
+  document.getElementById('terminal-panel').classList.add('visible');
+  createTerminal();
+}
+
+// Terminal voice input
+function updateTerminalVoiceUI() {
+  const textEl = document.getElementById('terminal-voice-text');
+  const clearBtn = document.getElementById('terminal-clear-btn');
+  const addBtn = document.getElementById('terminal-add-btn');
+  const micBtn = document.getElementById('terminal-mic-btn');
+
+  if (!textEl || !clearBtn || !addBtn || !micBtn) return;
+
+  const hasText = terminalVoiceText.length > 0;
+  const micIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+  const checkIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+
+  // Update text display
+  textEl.textContent = terminalVoiceText;
+
+  // Update transcribing state
+  if (terminalVoiceTranscribing) {
+    textEl.classList.add('transcribing');
+  } else {
+    textEl.classList.remove('transcribing');
+  }
+
+  // Update clear/add button visibility
+  if (hasText) {
+    clearBtn.classList.add('visible');
+    addBtn.classList.add('visible');
+  } else {
+    clearBtn.classList.remove('visible');
+    addBtn.classList.remove('visible');
+  }
+
+  // Update mic button state
+  if (terminalVoiceRecording) {
+    micBtn.classList.add('recording');
+    micBtn.classList.remove('processing', 'submit-mode');
+    micBtn.innerHTML = micIcon;
+  } else if (terminalVoiceTranscribing) {
+    micBtn.classList.add('processing');
+    micBtn.classList.remove('recording', 'submit-mode');
+    micBtn.innerHTML = micIcon;
+  } else if (hasText) {
+    micBtn.classList.add('submit-mode');
+    micBtn.classList.remove('recording', 'processing');
+    micBtn.innerHTML = checkIcon;
+  } else {
+    micBtn.classList.remove('recording', 'processing', 'submit-mode');
+    micBtn.innerHTML = micIcon;
+  }
+
+  // Update add button recording state
+  if (terminalVoiceRecording && hasText) {
+    addBtn.classList.add('recording');
+  } else {
+    addBtn.classList.remove('recording');
+  }
+}
+
+function toggleTerminalVoiceRecording(btn) {
+  if (!activeTerminalId) return; // No active terminal
+
+  const hasText = terminalVoiceText.length > 0;
+  const isMicBtn = btn && btn.id === 'terminal-mic-btn';
+
+  // If has text and clicking main mic (not recording), submit
+  if (hasText && isMicBtn && !terminalVoiceRecording) {
+    submitTerminalVoice();
+    return;
+  }
+
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    // Stop recording
+    terminalVoiceTranscribing = true;
+    terminalVoiceRecording = false;
+    mediaRecorder.stop();
+    updateTerminalVoiceUI();
+  } else if (mediaRecorder && mediaRecorder.state === 'inactive') {
+    // Start recording for terminal
+    activeWindowId = 'terminal-voice';
+    activeMicBtn = btn;
+    terminalVoiceRecording = true;
+    audioChunks = [];
+    mediaRecorder.start();
+    updateTerminalVoiceUI();
+  }
+}
+
+function clearTerminalVoice() {
+  terminalVoiceText = '';
+  updateTerminalVoiceUI();
+}
+
+function submitTerminalVoice() {
+  if (!activeTerminalId || !terminalVoiceText) return;
+
+  // Send text to terminal
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'terminalInput',
+      termId: activeTerminalId,
+      data: terminalVoiceText
+    }));
+  }
+
+  // Clear text
+  terminalVoiceText = '';
+  updateTerminalVoiceUI();
 }
 
 function createTerminal() {
@@ -865,6 +1057,9 @@ function createTerminal() {
 
 function onTerminalCreated(termId) {
   const container = document.getElementById('terminal-container');
+  const isReadOnly = pendingTerminalReadOnly;
+  const command = pendingTerminalCommand; // Capture before reset
+  pendingTerminalReadOnly = false; // Reset flag
 
   // Create terminal element
   const termElement = document.createElement('div');
@@ -874,13 +1069,15 @@ function onTerminalCreated(termId) {
 
   // Create xterm instance
   const terminal = new Terminal({
-    cursorBlink: true,
+    cursorBlink: !isReadOnly,
+    cursorStyle: isReadOnly ? 'bar' : 'block',
+    disableStdin: isReadOnly,
     fontSize: 14,
     fontFamily: 'Consolas, "Courier New", monospace',
     theme: {
       background: '#0d0d1a',
       foreground: '#e0e0e0',
-      cursor: '#16a085',
+      cursor: isReadOnly ? '#0d0d1a' : '#16a085', // Hide cursor if read-only
       cursorAccent: '#0d0d1a',
       selection: 'rgba(22, 160, 133, 0.3)',
       black: '#1a1a2e',
@@ -906,23 +1103,30 @@ function onTerminalCreated(termId) {
   terminal.loadAddon(fitAddon);
   terminal.open(termElement);
 
-  // Handle input
-  terminal.onData((data) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'terminalInput', termId, data }));
-    }
-  });
+  // Handle input (only for non-read-only terminals)
+  if (!isReadOnly) {
+    terminal.onData((data) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'terminalInput', termId, data }));
+      }
+    });
+  }
 
   // Store terminal
-  terminals.set(termId, { terminal, fitAddon, element: termElement });
+  terminals.set(termId, { terminal, fitAddon, element: termElement, readOnly: isReadOnly });
 
   // Create tab
   const tabsContainer = document.getElementById('terminal-tabs');
   const tab = document.createElement('div');
   tab.className = 'terminal-tab';
   tab.dataset.termId = termId;
+  let tabLabel = `Terminal ${termId}`;
+  if (isReadOnly && command) {
+    if (command.includes('claude')) tabLabel = 'Claude';
+    else if (command.includes('gemini')) tabLabel = 'Gemini';
+  }
   tab.innerHTML = `
-    <span>Terminal ${termId}</span>
+    <span>${tabLabel}</span>
     <button class="terminal-tab-close" title="Close">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
@@ -983,7 +1187,10 @@ function switchToTerminal(termId) {
   terminals.forEach((term, id) => {
     term.element.classList.toggle('active', id === termId);
     if (id === termId) {
-      term.terminal.focus();
+      // Only focus if not read-only (prevents keyboard on mobile)
+      if (!term.readOnly) {
+        term.terminal.focus();
+      }
       term.fitAddon.fit();
     }
   });
@@ -1047,6 +1254,9 @@ document.getElementById('copy-btn').addEventListener('click', copyTranscription)
 // AI mic button
 document.getElementById('ai-mic-btn').addEventListener('click', toggleAiRecording);
 
+// AI copy button
+document.getElementById('ai-copy-btn').addEventListener('click', copyAiResponse);
+
 // Close dialog buttons
 document.querySelector('.dialog-cancel').onclick = hideCloseDialog;
 document.querySelector('.dialog-confirm').onclick = confirmCloseWindow;
@@ -1086,7 +1296,11 @@ document.getElementById('detail-clear-btn').onclick = () => {
 document.getElementById('terminal-fab').onclick = showTerminalPanel;
 document.getElementById('close-terminal-panel').onclick = hideTerminalPanel;
 document.getElementById('new-terminal-btn').onclick = createTerminal;
+document.getElementById('terminal-mic-btn').onclick = () => toggleTerminalVoiceRecording(document.getElementById('terminal-mic-btn'));
+document.getElementById('terminal-clear-btn').onclick = clearTerminalVoice;
+document.getElementById('terminal-add-btn').onclick = () => toggleTerminalVoiceRecording(document.getElementById('terminal-add-btn'));
 document.getElementById('claude-fab').onclick = launchClaude;
+document.getElementById('gemini-fab').onclick = launchGemini;
 
 connect();
 initVoice();
