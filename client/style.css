@@ -1323,6 +1323,7 @@ button:disabled {
   transform: translateY(100%);
   transition: transform 0.3s ease;
   display: flex;
+  overscroll-behavior: contain;
   flex-direction: column;
   border-top: 1px solid #3a3a5c;
 }
@@ -1454,6 +1455,69 @@ button:disabled {
   height: 24px;
 }
 
+/* New Terminal Dropdown */
+.new-terminal-wrapper {
+  position: relative;
+}
+
+.new-terminal-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  border: 1px solid #3a3a5c;
+  border-radius: 8px;
+  padding: 4px;
+  margin-top: 4px;
+  z-index: 100;
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.new-terminal-menu.visible {
+  display: block;
+}
+
+.new-terminal-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-terminal-option:hover {
+  background: #2a2a4e;
+  color: white;
+}
+
+.new-terminal-option svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+#new-terminal-claude:hover {
+  background: #d35400;
+}
+
+#new-terminal-gemini:hover {
+  background: #2980b9;
+}
+
+#new-terminal-regular:hover {
+  background: #16a085;
+}
+
 /* Terminal Voice Bar */
 .terminal-voice-bar {
   display: flex;
@@ -1573,6 +1637,7 @@ button:disabled {
   flex: 1;
   position: relative;
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .terminal-instance {
@@ -1589,11 +1654,46 @@ button:disabled {
   display: block;
 }
 
-/* Hide FAB when panel is open */
-.terminal-panel.visible ~ .terminal-fab,
-.terminal-panel.visible ~ .claude-fab,
-.terminal-panel.visible ~ .gemini-fab {
+/* Enable xterm.js scrolling */
+.terminal-instance .xterm {
+  height: 100%;
+}
+
+.terminal-instance .xterm-viewport {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.terminal-instance .xterm-screen {
+  height: 100%;
+}
+
+/* Terminal minimized state - just show the header bar */
+.terminal-panel.minimized {
+  transform: translateY(calc(100% - 40px));
+}
+
+.terminal-panel.minimized .terminal-panel-header {
+  cursor: pointer;
+}
+
+.terminal-panel.minimized .terminal-voice-bar,
+.terminal-panel.minimized .terminal-container {
   display: none;
+}
+
+/* Hide FAB when panel is fully open (not minimized) */
+.terminal-panel.visible:not(.minimized) ~ .terminal-fab,
+.terminal-panel.visible:not(.minimized) ~ .claude-fab,
+.terminal-panel.visible:not(.minimized) ~ .gemini-fab {
+  display: none;
+}
+
+/* Move FAB buttons above minimized terminal bar */
+.terminal-panel.minimized ~ .terminal-fab,
+.terminal-panel.minimized ~ .claude-fab,
+.terminal-panel.minimized ~ .gemini-fab {
+  bottom: 60px;
 }
 
 /* Claude FAB Button */

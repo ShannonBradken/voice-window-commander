@@ -898,7 +898,9 @@ function toggleAutoRefresh() {
 
 // Terminal Functions
 function showTerminalPanel() {
-  document.getElementById('terminal-panel').classList.add('visible');
+  const panel = document.getElementById('terminal-panel');
+  panel.classList.add('visible');
+  panel.classList.remove('minimized');
   // Create first terminal if none exist
   if (terminals.size === 0) {
     createTerminal();
@@ -912,7 +914,28 @@ function showTerminalPanel() {
 }
 
 function hideTerminalPanel() {
-  document.getElementById('terminal-panel').classList.remove('visible');
+  const panel = document.getElementById('terminal-panel');
+  panel.classList.remove('visible');
+  panel.classList.remove('minimized');
+}
+
+function minimizeTerminalPanel() {
+  const panel = document.getElementById('terminal-panel');
+  panel.classList.add('minimized');
+}
+
+function expandTerminalPanel() {
+  const panel = document.getElementById('terminal-panel');
+  if (panel.classList.contains('minimized')) {
+    panel.classList.remove('minimized');
+    // Fit the active terminal after expanding
+    if (activeTerminalId) {
+      const term = terminals.get(activeTerminalId);
+      if (term) {
+        setTimeout(() => term.fitAddon.fit(), 100);
+      }
+    }
+  }
 }
 
 function launchClaude() {
@@ -920,7 +943,9 @@ function launchClaude() {
   pendingTerminalCommand = 'claude --dangerously-skip-permissions';
   pendingTerminalReadOnly = true; // Make Claude terminal read-only
   // Open terminal panel and create a new terminal
-  document.getElementById('terminal-panel').classList.add('visible');
+  const panel = document.getElementById('terminal-panel');
+  panel.classList.add('visible');
+  panel.classList.remove('minimized');
   createTerminal();
 }
 
@@ -929,7 +954,9 @@ function launchGemini() {
   pendingTerminalCommand = 'gemini';
   pendingTerminalReadOnly = true; // Make Gemini terminal read-only
   // Open terminal panel and create a new terminal
-  document.getElementById('terminal-panel').classList.add('visible');
+  const panel = document.getElementById('terminal-panel');
+  panel.classList.add('visible');
+  panel.classList.remove('minimized');
   createTerminal();
 }
 
@@ -1028,12 +1055,26 @@ function clearTerminalVoice() {
 function submitTerminalVoice() {
   if (!activeTerminalId || !terminalVoiceText) return;
 
-  // Send text to terminal
+  // Get terminal type to determine appropriate line ending
+  const terminalData = terminals.get(activeTerminalId);
+  const terminalType = terminalData?.terminalType || 'regular';
+
+  // Claude uses \n, Gemini uses \r
+  const lineEnding = terminalType === 'claude' ? '\n' : '\r';
+
+  // Send text to terminal, then send Enter key separately
   if (ws && ws.readyState === WebSocket.OPEN) {
+    // First send the text
     ws.send(JSON.stringify({
       type: 'terminalInput',
       termId: activeTerminalId,
       data: terminalVoiceText
+    }));
+    // Then send Enter key (appropriate for terminal type)
+    ws.send(JSON.stringify({
+      type: 'terminalInput',
+      termId: activeTerminalId,
+      data: lineEnding
     }));
   }
 
@@ -1112,8 +1153,13 @@ function onTerminalCreated(termId) {
     });
   }
 
+  // Determine terminal type for line ending handling
+  let terminalType = 'regular';
+  if (command && command.includes('claude')) terminalType = 'claude';
+  else if (command && command.includes('gemini')) terminalType = 'gemini';
+
   // Store terminal
-  terminals.set(termId, { terminal, fitAddon, element: termElement, readOnly: isReadOnly });
+  terminals.set(termId, { terminal, fitAddon, element: termElement, readOnly: isReadOnly, terminalType });
 
   // Create tab
   const tabsContainer = document.getElementById('terminal-tabs');
@@ -1295,12 +1341,73 @@ document.getElementById('detail-clear-btn').onclick = () => {
 // Terminal panel buttons
 document.getElementById('terminal-fab').onclick = showTerminalPanel;
 document.getElementById('close-terminal-panel').onclick = hideTerminalPanel;
-document.getElementById('new-terminal-btn').onclick = createTerminal;
+
+// New terminal dropdown menu
+document.getElementById('new-terminal-btn').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('new-terminal-menu').classList.toggle('visible');
+};
+
+document.getElementById('new-terminal-claude').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('new-terminal-menu').classList.remove('visible');
+  pendingTerminalCommand = 'claude --dangerously-skip-permissions';
+  pendingTerminalReadOnly = true;
+  createTerminal();
+};
+
+document.getElementById('new-terminal-gemini').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('new-terminal-menu').classList.remove('visible');
+  pendingTerminalCommand = 'gemini';
+  pendingTerminalReadOnly = true;
+  createTerminal();
+};
+
+document.getElementById('new-terminal-regular').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('new-terminal-menu').classList.remove('visible');
+  createTerminal();
+};
+
 document.getElementById('terminal-mic-btn').onclick = () => toggleTerminalVoiceRecording(document.getElementById('terminal-mic-btn'));
 document.getElementById('terminal-clear-btn').onclick = clearTerminalVoice;
 document.getElementById('terminal-add-btn').onclick = () => toggleTerminalVoiceRecording(document.getElementById('terminal-add-btn'));
 document.getElementById('claude-fab').onclick = launchClaude;
 document.getElementById('gemini-fab').onclick = launchGemini;
+
+// Terminal panel click handler
+document.getElementById('terminal-panel').addEventListener('click', (e) => {
+  const terminalPanel = document.getElementById('terminal-panel');
+
+  // Close dropdown menu when clicking elsewhere
+  if (!e.target.closest('.new-terminal-wrapper')) {
+    document.getElementById('new-terminal-menu').classList.remove('visible');
+  }
+
+  // If minimized and clicking on header, expand the panel
+  if (terminalPanel.classList.contains('minimized')) {
+    const isOnHeader = e.target.closest('.terminal-panel-header');
+    if (isOnHeader && !e.target.closest('.close-terminal-panel-btn')) {
+      expandTerminalPanel();
+    }
+  }
+
+  e.stopPropagation();
+});
+
+document.addEventListener('click', (e) => {
+  const terminalPanel = document.getElementById('terminal-panel');
+  if (!terminalPanel.classList.contains('visible')) return;
+  if (terminalPanel.classList.contains('minimized')) return; // Already minimized
+
+  // Check if click is on FAB buttons (which open the terminal)
+  const isOnFab = e.target.closest('#terminal-fab, #claude-fab, #gemini-fab');
+
+  if (!isOnFab) {
+    minimizeTerminalPanel();
+  }
+});
 
 connect();
 initVoice();
