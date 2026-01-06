@@ -1,3 +1,7 @@
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
+
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_URL = `${wsProtocol}//${window.location.hostname}:3001`;
 
@@ -11,6 +15,16 @@ let cardTexts = {}; // Store accumulated text per windowId
 let transcribingWindows = {}; // Track windows with transcription in progress
 let autoRefreshEnabled = false;
 let autoRefreshInterval = null;
+let pendingCloseWindowId = null; // Window ID pending close confirmation
+let currentDetailWindowId = null; // Window ID for detail page
+let aiQueryText = ''; // Text for AI query
+let aiProcessing = false; // Whether AI query is in progress
+
+// Terminal state
+const terminals = new Map(); // termId -> { terminal, fitAddon, element }
+let activeTerminalId = null;
+let terminalCounter = 0;
+let pendingTerminalCommand = null; // Command to run after terminal is created
 
 function connect() {
   ws = new WebSocket(WS_URL);
@@ -96,11 +110,319 @@ function handleMessage(msg) {
       }
       displayTranscription(`Error: ${msg.error}`);
       break;
+
+    case 'screenshot':
+      if (msg.windowId === currentDetailWindowId) {
+        displayScreenshot(msg.screenshot, msg.width, msg.height);
+      }
+      break;
+
+    case 'screenshotError':
+      if (msg.windowId === currentDetailWindowId) {
+        document.getElementById('detail-screenshot').innerHTML =
+          '<div class="screenshot-loading">Screenshot unavailable</div>';
+      }
+      break;
+
+    case 'aiTranscription':
+      // Show transcribed query text
+      aiQueryText = msg.text;
+      document.getElementById('ai-query-text').textContent = msg.text;
+      // Now send to AI for response
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'aiQuery', text: msg.text }));
+      }
+      break;
+
+    case 'aiResponse':
+      aiProcessing = false;
+      updateAiMicButton();
+      const responseEl = document.getElementById('ai-response');
+      // Render markdown to HTML
+      responseEl.innerHTML = marked.parse(msg.text);
+      responseEl.classList.remove('loading');
+      responseEl.classList.add('visible');
+      break;
+
+    case 'aiError':
+      aiProcessing = false;
+      updateAiMicButton();
+      const errorEl = document.getElementById('ai-response');
+      errorEl.textContent = `Error: ${msg.error}`;
+      errorEl.classList.remove('loading');
+      errorEl.classList.add('visible');
+      break;
+
+    // Terminal messages
+    case 'terminalCreated':
+      onTerminalCreated(msg.termId);
+      break;
+
+    case 'terminalOutput':
+      const term = terminals.get(msg.termId);
+      if (term) {
+        term.terminal.write(msg.data);
+      }
+      break;
+
+    case 'terminalExit':
+      closeTerminal(msg.termId);
+      break;
+
+    case 'terminalError':
+      console.error('Terminal error:', msg.error);
+      break;
   }
 }
 
 function displayTranscription(text) {
   document.getElementById('transcription-text').textContent = text;
+  // Show copy button if we have actual transcription text
+  const copyBtn = document.getElementById('copy-btn');
+  if (text && text !== 'Listening...' && text !== 'Processing...' && !text.startsWith('Error:')) {
+    copyBtn.classList.add('visible');
+  } else {
+    copyBtn.classList.remove('visible');
+  }
+}
+
+function scaleTextToFit(element) {
+  const maxFontSize = 0.95; // rem
+  const minFontSize = 0.55; // rem
+  let fontSize = maxFontSize;
+
+  element.style.fontSize = fontSize + 'rem';
+
+  // Reduce font size until text fits or we hit minimum
+  while (element.scrollWidth > element.clientWidth && fontSize > minFontSize) {
+    fontSize -= 0.05;
+    element.style.fontSize = fontSize + 'rem';
+  }
+}
+
+function showCloseDialog(windowId) {
+  const win = windows.find(w => w.id === windowId);
+  if (!win) return;
+
+  pendingCloseWindowId = windowId;
+
+  const dialog = document.getElementById('close-dialog');
+  const iconEl = dialog.querySelector('.dialog-icon');
+  const titleEl = dialog.querySelector('.dialog-title');
+  const pathEl = dialog.querySelector('.dialog-path');
+
+  // Set window info
+  if (win.icon) {
+    iconEl.innerHTML = `<img src="${win.icon}" alt="">`;
+  } else {
+    iconEl.innerHTML = '';
+  }
+  titleEl.textContent = win.title || 'Untitled';
+  pathEl.textContent = win.path || 'Unknown';
+
+  dialog.classList.add('visible');
+}
+
+function hideCloseDialog() {
+  const dialog = document.getElementById('close-dialog');
+  dialog.classList.remove('visible');
+  pendingCloseWindowId = null;
+}
+
+function confirmCloseWindow() {
+  if (pendingCloseWindowId && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'closeWindow', windowId: pendingCloseWindowId }));
+  }
+  hideCloseDialog();
+}
+
+function displayScreenshot(screenshotData, width, height) {
+  const container = document.getElementById('detail-screenshot');
+
+  // Check if it's raw pixel data
+  if (screenshotData.startsWith('data:image/raw;')) {
+    // Parse width and height from data URL
+    const match = screenshotData.match(/width=(\d+);height=(\d+);base64,(.+)/);
+    if (match) {
+      const w = parseInt(match[1]);
+      const h = parseInt(match[2]);
+      const base64Data = match[3];
+
+      // Create canvas and draw pixels
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // Decode base64 to pixels
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Create ImageData and put pixels
+      const imageData = ctx.createImageData(w, h);
+      imageData.data.set(bytes);
+      ctx.putImageData(imageData, 0, 0);
+
+      // Convert canvas to image
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.alt = 'Window screenshot';
+      container.innerHTML = '';
+      container.appendChild(img);
+    }
+  } else {
+    // Regular image data URL
+    const img = document.createElement('img');
+    img.src = screenshotData;
+    img.alt = 'Window screenshot';
+    container.innerHTML = '';
+    container.appendChild(img);
+  }
+}
+
+function requestScreenshot(windowId) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    // Measure available space below the top bar
+    const topBar = document.querySelector('.detail-top-bar');
+    const topBarHeight = topBar ? topBar.offsetHeight : 0;
+    const availableHeight = window.innerHeight - topBarHeight;
+
+    // Account for device pixel ratio
+    const pixelRatio = window.devicePixelRatio || 1;
+    const screenWidth = window.innerWidth * pixelRatio;
+    const screenHeight = availableHeight * pixelRatio;
+
+    console.log(`Screenshot request: ${Math.round(screenWidth)}x${Math.round(screenHeight)} (available: ${availableHeight}px, topBar: ${topBarHeight}px)`);
+
+    ws.send(JSON.stringify({
+      type: 'getScreenshot',
+      windowId,
+      screenWidth: Math.round(screenWidth),
+      screenHeight: Math.round(screenHeight)
+    }));
+  }
+}
+
+function showDetailPage(windowId) {
+  const win = windows.find(w => w.id === windowId);
+  if (!win) return;
+
+  currentDetailWindowId = windowId;
+
+  const detailPage = document.getElementById('detail-page');
+
+  // Reset screenshot to loading state
+  document.getElementById('detail-screenshot').innerHTML =
+    '<div class="screenshot-loading">Capturing screenshot...</div>';
+
+  // Set header title
+  document.getElementById('detail-header-title').textContent = win.title || 'Untitled';
+
+  // Set icon
+  const iconEl = document.getElementById('detail-icon');
+  if (win.icon) {
+    iconEl.innerHTML = `<img src="${win.icon}" alt="">`;
+  } else {
+    iconEl.innerHTML = '';
+  }
+
+  // Set details
+  document.getElementById('detail-title').textContent = win.title || 'Untitled';
+  document.getElementById('detail-path').textContent = win.path || 'Unknown';
+  document.getElementById('detail-pid').textContent = win.processId || 'Unknown';
+  document.getElementById('detail-window-id').textContent = win.id || 'Unknown';
+
+  if (win.bounds) {
+    document.getElementById('detail-position').textContent = `X: ${win.bounds.x}, Y: ${win.bounds.y}`;
+    document.getElementById('detail-size').textContent = `${win.bounds.width} × ${win.bounds.height}`;
+  } else {
+    document.getElementById('detail-position').textContent = 'Unknown';
+    document.getElementById('detail-size').textContent = 'Unknown';
+  }
+
+  // Update voice controls
+  updateDetailVoiceControls(windowId);
+
+  detailPage.classList.add('visible');
+
+  // Request screenshot after a short delay to allow page transition
+  setTimeout(() => requestScreenshot(windowId), 100);
+}
+
+function updateDetailVoiceControls(windowId) {
+  const hasText = cardTexts[windowId] && cardTexts[windowId].length > 0;
+  const isTranscribing = transcribingWindows[windowId] === true;
+
+  // Update text display
+  document.getElementById('detail-card-text').textContent = cardTexts[windowId] || '';
+
+  // Update clear button visibility
+  const clearBtn = document.getElementById('detail-clear-btn');
+  if (hasText) {
+    clearBtn.classList.add('visible');
+  } else {
+    clearBtn.classList.remove('visible');
+  }
+
+  // Update add button visibility
+  const addBtn = document.getElementById('detail-add-btn');
+  if (hasText) {
+    addBtn.classList.add('visible');
+  } else {
+    addBtn.classList.remove('visible');
+  }
+
+  // Update mic/submit button
+  const micBtn = document.getElementById('detail-mic-btn');
+  if (hasText || isTranscribing) {
+    micBtn.classList.add('submit-mode');
+    if (isTranscribing) {
+      micBtn.classList.add('processing');
+      micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg>`;
+      micBtn.disabled = true;
+    } else {
+      micBtn.classList.remove('processing');
+      micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+      micBtn.disabled = false;
+    }
+  } else {
+    micBtn.classList.remove('submit-mode');
+    micBtn.classList.remove('processing');
+    micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+    micBtn.disabled = false;
+  }
+}
+
+function hideDetailPage() {
+  document.getElementById('detail-page').classList.remove('visible');
+  currentDetailWindowId = null;
+}
+
+function detailFocusWindow() {
+  if (currentDetailWindowId) {
+    focusWindow(currentDetailWindowId);
+  }
+}
+
+function detailCloseWindow() {
+  if (currentDetailWindowId) {
+    showCloseDialog(currentDetailWindowId);
+  }
+}
+
+function detailMaximizeWindow() {
+  if (currentDetailWindowId && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'maximizeWindow', windowId: currentDetailWindowId }));
+  }
+}
+
+function detailMinimizeWindow() {
+  if (currentDetailWindowId && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'minimizeWindow', windowId: currentDetailWindowId }));
+  }
 }
 
 function appendCardText(windowId, text) {
@@ -115,6 +437,11 @@ function appendCardText(windowId, text) {
     textEl.textContent = cardTexts[windowId];
   }
   updateCardButtons(windowId);
+
+  // Update detail page if showing this window
+  if (currentDetailWindowId === windowId) {
+    updateDetailVoiceControls(windowId);
+  }
 }
 
 function submitCardText(windowId) {
@@ -128,6 +455,11 @@ function submitCardText(windowId) {
       textEl.textContent = '';
     }
     updateCardButtons(windowId);
+
+    // Update detail page if showing this window
+    if (currentDetailWindowId === windowId) {
+      updateDetailVoiceControls(windowId);
+    }
   }
 }
 
@@ -138,6 +470,11 @@ function clearCardText(windowId) {
     textEl.textContent = '';
   }
   updateCardButtons(windowId);
+
+  // Update detail page if showing this window
+  if (currentDetailWindowId === windowId) {
+    updateDetailVoiceControls(windowId);
+  }
 }
 
 function updateCardButtons(windowId) {
@@ -186,6 +523,11 @@ function updateCardButtons(windowId) {
       micBtn.disabled = false;
     }
   }
+
+  // Update detail page if showing this window
+  if (currentDetailWindowId === windowId) {
+    updateDetailVoiceControls(windowId);
+  }
 }
 
 function renderWindows() {
@@ -198,7 +540,7 @@ function renderWindows() {
 
     const cardContent = document.createElement('div');
     cardContent.className = 'card-content';
-    cardContent.onclick = () => focusWindow(win.id);
+    cardContent.onclick = () => showDetailPage(win.id);
 
     // Icon
     if (win.icon) {
@@ -216,15 +558,20 @@ function renderWindows() {
     title.className = 'window-title';
     title.textContent = win.title || 'Untitled';
 
-    const path = document.createElement('div');
-    path.className = 'window-path';
-    // Extract just the executable name from path
-    const exeName = win.path ? win.path.split('\\').pop() : 'Unknown';
-    path.textContent = exeName;
-
     cardInfo.appendChild(title);
-    cardInfo.appendChild(path);
     cardContent.appendChild(cardInfo);
+
+    // Scale title to fit on one line after render
+    requestAnimationFrame(() => scaleTextToFit(title));
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'card-close-btn';
+    closeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      showCloseDialog(win.id);
+    };
 
     const hasText = cardTexts[win.id] && cardTexts[win.id].length > 0;
 
@@ -266,7 +613,7 @@ function renderWindows() {
       }
     };
 
-    // Text display area
+    // Text display area with buttons
     const cardTextArea = document.createElement('div');
     cardTextArea.className = 'card-text-area';
 
@@ -275,16 +622,21 @@ function renderWindows() {
     cardText.dataset.windowId = win.id;
     cardText.textContent = cardTexts[win.id] || '';
 
+    const cardButtons = document.createElement('div');
+    cardButtons.className = 'card-buttons';
+    cardButtons.appendChild(clearBtn);
+    cardButtons.appendChild(addBtn);
+    cardButtons.appendChild(micBtn);
+
     cardTextArea.appendChild(cardText);
+    cardTextArea.appendChild(cardButtons);
 
     // Card layout: header row + text area
     const cardHeader = document.createElement('div');
     cardHeader.className = 'card-header';
     cardHeader.appendChild(cardContent);
-    cardHeader.appendChild(clearBtn);
-    cardHeader.appendChild(addBtn);
-    cardHeader.appendChild(micBtn);
 
+    card.appendChild(closeBtn);
     card.appendChild(cardHeader);
     card.appendChild(cardTextArea);
     grid.appendChild(card);
@@ -379,41 +731,91 @@ async function initVoice() {
   }
 }
 
-function startRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'inactive') {
+function toggleRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    // Stop recording
+    mediaRecorder.stop();
+    document.getElementById('record-btn').textContent = 'Press to Talk';
+    document.getElementById('record-btn').classList.remove('recording');
+    document.getElementById('recording-indicator').classList.remove('active');
+    document.getElementById('transcription-text').textContent = 'Processing...';
+    document.getElementById('copy-btn').classList.remove('visible');
+  } else if (mediaRecorder && mediaRecorder.state === 'inactive') {
+    // Start recording
     audioChunks = [];
     mediaRecorder.start();
     document.getElementById('record-btn').textContent = 'Recording...';
     document.getElementById('record-btn').classList.add('recording');
     document.getElementById('recording-indicator').classList.add('active');
     document.getElementById('transcription-text').textContent = 'Listening...';
+    document.getElementById('copy-btn').classList.remove('visible');
   }
 }
 
-function stopRecording() {
+function copyTranscription() {
+  const text = document.getElementById('transcription-text').textContent;
+  if (text && text !== 'Listening...' && text !== 'Processing...' && !text.startsWith('Error:')) {
+    navigator.clipboard.writeText(text).then(() => {
+      const copyBtn = document.getElementById('copy-btn');
+      copyBtn.classList.add('copied');
+      setTimeout(() => copyBtn.classList.remove('copied'), 1500);
+    });
+  }
+}
+
+// AI Query functions
+function updateAiMicButton() {
+  const micBtn = document.getElementById('ai-mic-btn');
+  if (aiProcessing) {
+    micBtn.classList.add('processing');
+    micBtn.classList.remove('recording');
+    micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg>`;
+  } else {
+    micBtn.classList.remove('processing');
+    micBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+  }
+}
+
+function toggleAiRecording() {
+  const micBtn = document.getElementById('ai-mic-btn');
+
+  if (aiProcessing) return; // Don't allow while processing
+
   if (mediaRecorder && mediaRecorder.state === 'recording') {
+    // Stop recording
+    aiProcessing = true;
+    updateAiMicButton();
     mediaRecorder.stop();
-    document.getElementById('record-btn').textContent = 'Hold to Talk';
-    document.getElementById('record-btn').classList.remove('recording');
-    document.getElementById('recording-indicator').classList.remove('active');
-    document.getElementById('transcription-text').textContent = 'Processing...';
+    micBtn.classList.remove('recording');
+
+    // Show loading state
+    const responseEl = document.getElementById('ai-response');
+    responseEl.textContent = 'Thinking...';
+    responseEl.classList.add('loading', 'visible');
+  } else if (mediaRecorder && mediaRecorder.state === 'inactive') {
+    // Start recording for AI query
+    activeWindowId = 'ai-query'; // Special marker for AI queries
+    activeMicBtn = micBtn;
+    audioChunks = [];
+    mediaRecorder.start();
+    micBtn.classList.add('recording');
+
+    // Clear previous response
+    document.getElementById('ai-query-text').textContent = '';
+    document.getElementById('ai-response').classList.remove('visible');
   }
 }
 
 // Auto-refresh toggle
 function toggleAutoRefresh() {
-  autoRefreshEnabled = !autoRefreshEnabled;
-  const btn = document.getElementById('auto-refresh-btn');
+  const toggle = document.getElementById('auto-refresh-toggle');
+  autoRefreshEnabled = toggle.checked;
 
   if (autoRefreshEnabled) {
-    btn.textContent = 'Auto-Refresh: On';
-    btn.classList.add('active');
     // Refresh immediately, then every 2 seconds
     refreshWindows();
     autoRefreshInterval = setInterval(refreshWindows, 2000);
   } else {
-    btn.textContent = 'Auto-Refresh: Off';
-    btn.classList.remove('active');
     if (autoRefreshInterval) {
       clearInterval(autoRefreshInterval);
       autoRefreshInterval = null;
@@ -421,16 +823,274 @@ function toggleAutoRefresh() {
   }
 }
 
+// Terminal Functions
+function showTerminalPanel() {
+  document.getElementById('terminal-panel').classList.add('visible');
+  // Create first terminal if none exist
+  if (terminals.size === 0) {
+    createTerminal();
+  } else if (activeTerminalId) {
+    // Fit the active terminal
+    const term = terminals.get(activeTerminalId);
+    if (term) {
+      setTimeout(() => term.fitAddon.fit(), 100);
+    }
+  }
+}
+
+function hideTerminalPanel() {
+  document.getElementById('terminal-panel').classList.remove('visible');
+}
+
+function launchClaude() {
+  // Set the command to run after terminal is created
+  pendingTerminalCommand = 'claude --dangerously-skip-permissions';
+  // Open terminal panel and create a new terminal
+  document.getElementById('terminal-panel').classList.add('visible');
+  createTerminal();
+}
+
+function createTerminal() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const container = document.getElementById('terminal-container');
+    const cols = Math.floor((container.clientWidth - 16) / 9); // Approximate char width
+    const rows = Math.floor((container.clientHeight - 16) / 17); // Approximate char height
+    ws.send(JSON.stringify({
+      type: 'terminalCreate',
+      cols: cols || 80,
+      rows: rows || 24
+    }));
+  }
+}
+
+function onTerminalCreated(termId) {
+  const container = document.getElementById('terminal-container');
+
+  // Create terminal element
+  const termElement = document.createElement('div');
+  termElement.className = 'terminal-instance';
+  termElement.id = `terminal-${termId}`;
+  container.appendChild(termElement);
+
+  // Create xterm instance
+  const terminal = new Terminal({
+    cursorBlink: true,
+    fontSize: 14,
+    fontFamily: 'Consolas, "Courier New", monospace',
+    theme: {
+      background: '#0d0d1a',
+      foreground: '#e0e0e0',
+      cursor: '#16a085',
+      cursorAccent: '#0d0d1a',
+      selection: 'rgba(22, 160, 133, 0.3)',
+      black: '#1a1a2e',
+      red: '#e74c3c',
+      green: '#2ecc71',
+      yellow: '#f1c40f',
+      blue: '#3498db',
+      magenta: '#9b59b6',
+      cyan: '#1abc9c',
+      white: '#ecf0f1',
+      brightBlack: '#3a3a5c',
+      brightRed: '#e74c3c',
+      brightGreen: '#2ecc71',
+      brightYellow: '#f1c40f',
+      brightBlue: '#3498db',
+      brightMagenta: '#9b59b6',
+      brightCyan: '#1abc9c',
+      brightWhite: '#ffffff'
+    }
+  });
+
+  const fitAddon = new FitAddon();
+  terminal.loadAddon(fitAddon);
+  terminal.open(termElement);
+
+  // Handle input
+  terminal.onData((data) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'terminalInput', termId, data }));
+    }
+  });
+
+  // Store terminal
+  terminals.set(termId, { terminal, fitAddon, element: termElement });
+
+  // Create tab
+  const tabsContainer = document.getElementById('terminal-tabs');
+  const tab = document.createElement('div');
+  tab.className = 'terminal-tab';
+  tab.dataset.termId = termId;
+  tab.innerHTML = `
+    <span>Terminal ${termId}</span>
+    <button class="terminal-tab-close" title="Close">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+  `;
+  tab.addEventListener('click', (e) => {
+    if (!e.target.closest('.terminal-tab-close')) {
+      switchToTerminal(termId);
+    }
+  });
+  tab.querySelector('.terminal-tab-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    requestCloseTerminal(termId);
+  });
+  tabsContainer.appendChild(tab);
+
+  // Switch to this terminal
+  switchToTerminal(termId);
+
+  // Fit after a short delay
+  setTimeout(() => {
+    fitAddon.fit();
+    // Send resize to server
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'terminalResize',
+        termId,
+        cols: terminal.cols,
+        rows: terminal.rows
+      }));
+    }
+
+    // Execute pending command if any
+    if (pendingTerminalCommand) {
+      setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'terminalInput',
+            termId,
+            data: pendingTerminalCommand + '\r'
+          }));
+        }
+        pendingTerminalCommand = null;
+      }, 500); // Wait for shell to initialize
+    }
+  }, 100);
+}
+
+function switchToTerminal(termId) {
+  // Update active state
+  activeTerminalId = termId;
+
+  // Update tabs
+  document.querySelectorAll('.terminal-tab').forEach(tab => {
+    tab.classList.toggle('active', parseInt(tab.dataset.termId) === termId);
+  });
+
+  // Update terminal visibility
+  terminals.forEach((term, id) => {
+    term.element.classList.toggle('active', id === termId);
+    if (id === termId) {
+      term.terminal.focus();
+      term.fitAddon.fit();
+    }
+  });
+}
+
+function requestCloseTerminal(termId) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'terminalClose', termId }));
+  }
+}
+
+function closeTerminal(termId) {
+  const term = terminals.get(termId);
+  if (term) {
+    term.terminal.dispose();
+    term.element.remove();
+    terminals.delete(termId);
+  }
+
+  // Remove tab
+  const tab = document.querySelector(`.terminal-tab[data-term-id="${termId}"]`);
+  if (tab) tab.remove();
+
+  // Switch to another terminal or close panel
+  if (terminals.size > 0) {
+    const nextTermId = terminals.keys().next().value;
+    switchToTerminal(nextTermId);
+  } else {
+    activeTerminalId = null;
+    hideTerminalPanel();
+  }
+}
+
+// Handle window resize for terminals
+window.addEventListener('resize', () => {
+  if (activeTerminalId) {
+    const term = terminals.get(activeTerminalId);
+    if (term) {
+      term.fitAddon.fit();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'terminalResize',
+          termId: activeTerminalId,
+          cols: term.terminal.cols,
+          rows: term.terminal.rows
+        }));
+      }
+    }
+  }
+});
+
 // Initialize
-document.getElementById('auto-refresh-btn').onclick = toggleAutoRefresh;
+document.getElementById('auto-refresh-toggle').onchange = toggleAutoRefresh;
 
 const recordBtn = document.getElementById('record-btn');
-recordBtn.addEventListener('mousedown', startRecording);
-recordBtn.addEventListener('mouseup', stopRecording);
-recordBtn.addEventListener('mouseleave', stopRecording);
-// Touch support
-recordBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
-recordBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+recordBtn.addEventListener('click', toggleRecording);
+
+// Copy button
+document.getElementById('copy-btn').addEventListener('click', copyTranscription);
+
+// AI mic button
+document.getElementById('ai-mic-btn').addEventListener('click', toggleAiRecording);
+
+// Close dialog buttons
+document.querySelector('.dialog-cancel').onclick = hideCloseDialog;
+document.querySelector('.dialog-confirm').onclick = confirmCloseWindow;
+document.getElementById('close-dialog').onclick = (e) => {
+  if (e.target.id === 'close-dialog') hideCloseDialog();
+};
+
+// Detail page buttons
+document.getElementById('detail-back').onclick = hideDetailPage;
+document.getElementById('detail-focus-btn').onclick = detailFocusWindow;
+document.getElementById('detail-maximize-btn').onclick = detailMaximizeWindow;
+document.getElementById('detail-minimize-btn').onclick = detailMinimizeWindow;
+document.getElementById('detail-close-btn').onclick = detailCloseWindow;
+
+// Detail page voice controls
+document.getElementById('detail-mic-btn').onclick = () => {
+  if (!currentDetailWindowId) return;
+  const hasText = cardTexts[currentDetailWindowId] && cardTexts[currentDetailWindowId].length > 0;
+  if (hasText) {
+    submitCardText(currentDetailWindowId);
+  } else {
+    toggleCardRecording(currentDetailWindowId, document.getElementById('detail-mic-btn'));
+  }
+};
+
+document.getElementById('detail-add-btn').onclick = () => {
+  if (!currentDetailWindowId) return;
+  toggleCardRecording(currentDetailWindowId, document.getElementById('detail-add-btn'));
+};
+
+document.getElementById('detail-clear-btn').onclick = () => {
+  if (!currentDetailWindowId) return;
+  clearCardText(currentDetailWindowId);
+};
+
+// Terminal panel buttons
+document.getElementById('terminal-fab').onclick = showTerminalPanel;
+document.getElementById('close-terminal-panel').onclick = hideTerminalPanel;
+document.getElementById('new-terminal-btn').onclick = createTerminal;
+document.getElementById('claude-fab').onclick = launchClaude;
 
 connect();
 initVoice();
+
+// Start auto-refresh by default
+autoRefreshEnabled = true;
+autoRefreshInterval = setInterval(refreshWindows, 2000);

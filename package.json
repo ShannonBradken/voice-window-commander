@@ -9,12 +9,16 @@
     "install:all": "npm install && cd client && npm install"
   },
   "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "clipboardy": "^4.0.0",
     "dotenv": "^17.2.3",
     "extract-file-icon": "^0.3.2",
+    "node-pty": "^1.1.0",
     "node-window-manager": "^2.2.4",
     "openai": "^6.15.0",
     "robotjs": "^0.6.0",
+    "screenshot-desktop": "^1.15.3",
     "ws": "^8.16.0"
   },
   "devDependencies": {
