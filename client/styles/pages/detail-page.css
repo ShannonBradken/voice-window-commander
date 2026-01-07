@@ -1,0 +1,437 @@
+/* Material Design 3 - Detail Page */
+
+.detail-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--md-surface);
+  z-index: var(--z-modal);
+  transform: translateX(100%);
+  transition: transform var(--duration-medium3) var(--easing-emphasized);
+  overflow: hidden;
+}
+
+.detail-page.visible {
+  transform: translateX(0);
+}
+
+/* Screenshot as full background */
+.detail-screenshot-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--md-surface-container-lowest);
+}
+
+.detail-screenshot-bg img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.detail-screenshot-bg .screenshot-loading {
+  color: var(--md-on-surface-variant);
+  font-size: var(--text-body-large);
+}
+
+/* Overlay for controls */
+.detail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.detail-overlay > * {
+  pointer-events: auto;
+}
+
+/* Top bar - MD3 Top App Bar */
+.detail-top-bar {
+  z-index: 10;
+  background: var(--md-surface-container);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2) var(--spacing-4);
+  min-height: 64px;
+}
+
+/* Voice bar in detail page */
+.detail-voice-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-top: 1px solid var(--md-outline-variant);
+}
+
+.detail-voice-bar .detail-card-text {
+  flex: 1;
+  min-height: 44px;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--md-surface-container-high);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+  word-wrap: break-word;
+  line-height: var(--leading-normal);
+}
+
+.detail-voice-bar .detail-card-text:empty::before {
+  content: 'Tap mic to speak...';
+  color: var(--md-on-surface-variant);
+}
+
+.detail-voice-bar .detail-card-text.transcribing::before {
+  content: 'Transcribing...';
+  color: var(--warning);
+}
+
+.detail-voice-bar .detail-card-text.transcribing::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: var(--spacing-2);
+  border: 2px solid var(--warning);
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+}
+
+.detail-voice-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Header title - MD3 Headline Small */
+.detail-header h2 {
+  font-size: var(--text-title-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 var(--spacing-3);
+  color: var(--md-on-surface);
+}
+
+/* Back button - MD3 Icon Button */
+.detail-back-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--md-on-surface);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-short4) var(--easing-standard);
+}
+
+.detail-back-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  border-radius: inherit;
+}
+
+.detail-back-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.detail-back-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.detail-header-spacer {
+  width: 48px;
+}
+
+/* Detail content */
+.detail-content {
+  padding: var(--spacing-5);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.detail-screenshot-container {
+  margin-bottom: var(--spacing-5);
+}
+
+.detail-screenshot {
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-screenshot img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.screenshot-loading {
+  color: var(--md-on-surface-variant);
+  font-size: var(--text-body-large);
+}
+
+/* Title row - MD3 Card style */
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+  padding: var(--spacing-4);
+  background: var(--md-surface-container);
+  border-radius: var(--radius-lg);
+}
+
+.detail-icon img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+}
+
+.detail-title-text {
+  flex: 1;
+  font-size: var(--text-title-large);
+  font-weight: var(--font-medium);
+  letter-spacing: 0;
+  color: var(--md-on-surface);
+  word-break: break-word;
+}
+
+/* Detail info - MD3 List style */
+.detail-info {
+  background: var(--md-surface-container);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.detail-field {
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.detail-field:last-child {
+  border-bottom: none;
+}
+
+.detail-field label {
+  display: block;
+  font-size: var(--text-label-medium);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+  margin-bottom: var(--spacing-1);
+}
+
+.detail-value {
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+  word-break: break-all;
+}
+
+/* Detail actions */
+.detail-actions {
+  margin-top: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.detail-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4) var(--spacing-6);
+  border-radius: var(--radius-full);
+  font-size: var(--text-label-large);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.1px;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-short4) var(--easing-standard);
+}
+
+.detail-action-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.detail-action-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.detail-action-btn svg {
+  width: 22px;
+  height: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.detail-action-btn.focus-btn {
+  background: var(--success-container);
+  color: var(--on-success-container);
+}
+
+.detail-action-btn.focus-btn:hover {
+  box-shadow: var(--elevation-1);
+}
+
+.detail-actions-row {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.detail-actions-row .detail-action-btn {
+  flex: 1;
+}
+
+.detail-action-btn.maximize-btn {
+  background: var(--info-container);
+  color: var(--on-info-container);
+}
+
+.detail-action-btn.minimize-btn {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.detail-action-btn.close-btn {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+/* Bottom floating bar */
+.detail-bottom-bar {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: linear-gradient(to top, var(--md-surface) 0%, transparent 100%);
+  padding-top: var(--spacing-10);
+}
+
+/* Floating circular buttons - MD3 FAB */
+.detail-floating-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  touch-action: manipulation;
+  box-shadow: var(--elevation-3);
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-floating-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.detail-floating-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.detail-floating-btn:hover {
+  box-shadow: var(--elevation-4);
+}
+
+.detail-floating-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.detail-floating-btn:active {
+  transform: scale(0.96);
+}
+
+.detail-floating-btn.focus-btn {
+  background: var(--success-container);
+  color: var(--on-success-container);
+}
+
+.detail-floating-btn.maximize-btn {
+  background: var(--info-container);
+  color: var(--on-info-container);
+}
+
+.detail-floating-btn.minimize-btn {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.detail-floating-btn.close-btn {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}

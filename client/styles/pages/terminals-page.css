@@ -1,0 +1,286 @@
+/* Material Design 3 - Terminals Page */
+
+/* Terminals FAB Button - MD3 FAB */
+.terminals-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--elevation-3);
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+}
+
+.terminals-fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.terminals-fab svg {
+  width: 28px;
+  height: 28px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.terminals-fab:hover {
+  box-shadow: var(--elevation-4);
+}
+
+.terminals-fab:hover::before {
+  opacity: var(--state-hover);
+}
+
+.terminals-fab:active {
+  transform: scale(0.96);
+}
+
+/* Terminals Page - MD3 Full-screen container */
+.terminals-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--md-surface);
+  z-index: var(--z-modal);
+  transform: translateX(100%);
+  transition: transform var(--duration-medium3) var(--easing-emphasized);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.terminals-page.visible {
+  transform: translateX(0);
+}
+
+/* Header - MD3 Top App Bar */
+.terminals-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--md-surface-container);
+  border-bottom: 1px solid var(--md-outline-variant);
+  flex-shrink: 0;
+  min-height: 64px;
+}
+
+.terminals-header h2 {
+  font-size: var(--text-title-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0;
+  flex: 1;
+  text-align: center;
+  color: var(--md-on-surface);
+}
+
+/* Back button - MD3 Icon Button */
+.terminals-back-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--md-on-surface);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-short4) var(--easing-standard);
+}
+
+.terminals-back-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  border-radius: inherit;
+}
+
+.terminals-back-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.terminals-back-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+/* Add button wrapper */
+.terminals-add-wrapper {
+  position: relative;
+}
+
+/* Add button - MD3 FAB */
+.terminals-add-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-short4) var(--easing-standard);
+  box-shadow: var(--elevation-2);
+}
+
+.terminals-add-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.terminals-add-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.terminals-add-btn:hover {
+  box-shadow: var(--elevation-3);
+}
+
+.terminals-add-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+/* Add menu - MD3 Menu */
+.terminals-add-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + var(--spacing-2));
+  right: 0;
+  background: var(--md-surface-container);
+  border-radius: var(--radius-xs);
+  padding: var(--spacing-2) 0;
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  box-shadow: var(--elevation-2);
+}
+
+.terminals-add-menu.visible {
+  display: block;
+  animation: scaleIn var(--duration-short4) var(--easing-emphasized-decelerate);
+}
+
+/* Menu options - MD3 Menu Item */
+.terminals-add-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--md-on-surface);
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all var(--duration-short4) var(--easing-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.terminals-add-option::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-on-surface);
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.terminals-add-option:hover::before {
+  opacity: var(--state-hover);
+}
+
+.terminals-add-option svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Specific menu item colors */
+#add-terminal-claude {
+  color: var(--claude-orange);
+}
+
+#add-terminal-gemini {
+  color: var(--gemini-blue);
+}
+
+#add-terminal-regular {
+  color: var(--md-tertiary);
+}
+
+/* List - MD3 List style */
+.terminals-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* Empty state */
+.terminals-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--md-on-surface-variant);
+  text-align: center;
+}
+
+.terminals-empty p {
+  margin: var(--spacing-1) 0;
+  font-size: var(--text-body-large);
+  letter-spacing: 0.5px;
+}
+
+.terminals-empty p:first-child {
+  font-size: var(--text-title-medium);
+  color: var(--md-on-surface);
+}

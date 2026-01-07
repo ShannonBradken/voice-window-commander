@@ -1,0 +1,362 @@
+/* Material Design 3 - Base styles */
+
+/* Reset and box-sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Root font smoothing */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Body - MD3 Surface */
+body {
+  font-family: 'Roboto', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-normal);
+  letter-spacing: 0.5px;
+  background: var(--md-background);
+  color: var(--md-on-background);
+  min-height: 100vh;
+}
+
+/* App container */
+#app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-6);
+}
+
+/* Header - MD3 Top App Bar style */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+}
+
+/* MD3 Typography Styles */
+h1 {
+  font-size: var(--text-headline-large);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-tight);
+  letter-spacing: 0;
+  color: var(--md-on-surface);
+}
+
+h2 {
+  font-size: var(--text-headline-small);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-tight);
+  letter-spacing: 0;
+  color: var(--md-on-surface);
+}
+
+h3 {
+  font-size: var(--text-title-large);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: 0;
+  color: var(--md-on-surface);
+}
+
+h4 {
+  font-size: var(--text-title-medium);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+  letter-spacing: 0.15px;
+  color: var(--md-on-surface);
+}
+
+/* Body text */
+p {
+  font-size: var(--text-body-large);
+  line-height: var(--leading-normal);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface-variant);
+}
+
+/* Labels */
+label {
+  font-size: var(--text-label-large);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+  letter-spacing: 0.1px;
+  color: var(--md-on-surface-variant);
+}
+
+/* Links */
+a {
+  color: var(--md-primary);
+  text-decoration: none;
+  transition: color var(--duration-short4) var(--easing-standard);
+}
+
+a:hover {
+  color: var(--purple-light);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Status bar - MD3 style indicator */
+#status {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--md-outline-variant);
+  z-index: var(--z-status);
+  transition: background var(--duration-medium2) var(--easing-standard);
+}
+
+#status.connected {
+  background: var(--status-connected);
+}
+
+#status.disconnected {
+  background: var(--status-disconnected);
+}
+
+/* Switch/Toggle - MD3 style */
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  cursor: pointer;
+}
+
+.switch-label span {
+  font-size: var(--text-label-large);
+  font-weight: var(--font-medium);
+  color: var(--md-on-surface-variant);
+}
+
+.switch {
+  position: relative;
+  width: 52px;
+  height: 32px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--md-surface-container-highest);
+  border: 2px solid var(--md-outline);
+  border-radius: var(--radius-full);
+  transition: all var(--duration-medium2) var(--easing-standard);
+}
+
+.switch .slider::before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 6px;
+  bottom: 6px;
+  background: var(--md-outline);
+  border-radius: var(--radius-full);
+  transition: all var(--duration-medium2) var(--easing-standard);
+}
+
+.switch input:checked + .slider {
+  background: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.switch input:checked + .slider::before {
+  background: var(--md-on-primary);
+  transform: translateX(20px);
+  width: 24px;
+  height: 24px;
+  left: 2px;
+  bottom: 2px;
+}
+
+.switch input:focus-visible + .slider {
+  box-shadow: 0 0 0 3px rgba(208, 188, 255, 0.38);
+}
+
+/* Selection */
+::selection {
+  background: rgba(208, 188, 255, 0.38);
+  color: var(--md-on-surface);
+}
+
+/* Scrollbar - MD3 style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* MD3 Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes expandTerminal {
+  from {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* MD3 State layer utility classes */
+.state-layer {
+  position: relative;
+  overflow: hidden;
+}
+
+.state-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  pointer-events: none;
+}
+
+.state-layer:hover::after {
+  opacity: var(--state-hover);
+}
+
+.state-layer:focus-visible::after {
+  opacity: var(--state-focus);
+}
+
+.state-layer:active::after {
+  opacity: var(--state-pressed);
+}
+
+/* Utility: Surface tonal elevations */
+.surface {
+  background: var(--md-surface);
+}
+
+.surface-container-lowest {
+  background: var(--md-surface-container-lowest);
+}
+
+.surface-container-low {
+  background: var(--md-surface-container-low);
+}
+
+.surface-container {
+  background: var(--md-surface-container);
+}
+
+.surface-container-high {
+  background: var(--md-surface-container-high);
+}
+
+.surface-container-highest {
+  background: var(--md-surface-container-highest);
+}

@@ -1,0 +1,302 @@
+/* Material Design 3 - AI Query Section */
+
+#ai-section {
+  background: var(--md-surface-container);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+  box-shadow: var(--elevation-1);
+}
+
+.ai-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* MD3 Text Field style */
+.ai-query-text {
+  flex: 1;
+  min-height: 48px;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--md-surface-container-highest);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+  word-wrap: break-word;
+  line-height: var(--leading-normal);
+}
+
+.ai-query-text:empty::before {
+  content: 'Ask Eddie anything...';
+  color: var(--md-on-surface-variant);
+}
+
+/* MD3 FAB style for mic button */
+.ai-mic-btn {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  touch-action: manipulation;
+  box-shadow: var(--elevation-3);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-mic-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.ai-mic-btn svg {
+  width: 28px;
+  height: 28px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.ai-mic-btn:hover {
+  box-shadow: var(--elevation-4);
+}
+
+.ai-mic-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.ai-mic-btn:active {
+  transform: scale(0.96);
+}
+
+.ai-mic-btn.recording {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  animation: pulse 1s infinite;
+}
+
+.ai-mic-btn.processing {
+  background: var(--warning-container);
+  color: var(--on-warning-container);
+  cursor: wait;
+}
+
+.ai-mic-btn.processing svg {
+  animation: spin 1s linear infinite;
+}
+
+/* AI Response - MD3 Card style */
+.ai-response-container {
+  position: relative;
+  margin-top: var(--spacing-4);
+  display: none;
+}
+
+.ai-response-container.visible {
+  display: block;
+  animation: fadeIn var(--duration-medium2) var(--easing-emphasized-decelerate);
+}
+
+.ai-response {
+  padding: var(--spacing-4);
+  padding-right: 56px;
+  background: var(--md-surface-container-high);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+  line-height: var(--leading-relaxed);
+}
+
+/* Copy button - MD3 Icon Button */
+.ai-copy-btn {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-short4) var(--easing-standard);
+  overflow: hidden;
+}
+
+.ai-copy-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  border-radius: inherit;
+}
+
+.ai-copy-btn svg {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.ai-copy-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.ai-copy-btn.copied {
+  background: var(--success-container);
+  color: var(--on-success-container);
+}
+
+.ai-response.loading {
+  color: var(--md-on-surface-variant);
+}
+
+.ai-response.loading + .ai-copy-btn {
+  display: none;
+}
+
+/* Markdown styles within AI response - MD3 Typography */
+.ai-response p {
+  margin: 0 0 var(--spacing-3) 0;
+  font-size: var(--text-body-large);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+}
+
+.ai-response p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-response h1, .ai-response h2, .ai-response h3, .ai-response h4 {
+  color: var(--md-on-surface);
+  margin: var(--spacing-4) 0 var(--spacing-2) 0;
+  font-weight: var(--font-medium);
+}
+
+.ai-response h1 {
+  font-size: var(--text-headline-small);
+}
+
+.ai-response h2 {
+  font-size: var(--text-title-large);
+}
+
+.ai-response h3, .ai-response h4 {
+  font-size: var(--text-title-medium);
+}
+
+.ai-response h1:first-child, .ai-response h2:first-child,
+.ai-response h3:first-child, .ai-response h4:first-child {
+  margin-top: 0;
+}
+
+.ai-response ul, .ai-response ol {
+  margin: var(--spacing-2) 0;
+  padding-left: var(--spacing-6);
+}
+
+.ai-response li {
+  margin: var(--spacing-1) 0;
+  font-size: var(--text-body-large);
+  letter-spacing: 0.5px;
+}
+
+/* Code - MD3 style */
+.ai-response code {
+  background: var(--md-surface-container-highest);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-xs);
+  font-family: 'Roboto Mono', 'Consolas', 'Monaco', monospace;
+  font-size: var(--text-body-small);
+  color: var(--md-primary);
+}
+
+.ai-response pre {
+  background: var(--md-surface-container-highest);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: var(--spacing-3) 0;
+}
+
+.ai-response pre code {
+  background: none;
+  padding: 0;
+  font-size: var(--text-body-medium);
+  color: var(--md-on-surface);
+}
+
+.ai-response blockquote {
+  border-left: 3px solid var(--md-primary);
+  margin: var(--spacing-3) 0;
+  padding-left: var(--spacing-4);
+  color: var(--md-on-surface-variant);
+}
+
+.ai-response a {
+  color: var(--md-primary);
+  text-decoration: none;
+}
+
+.ai-response a:hover {
+  text-decoration: underline;
+}
+
+.ai-response strong {
+  color: var(--md-on-surface);
+  font-weight: var(--font-medium);
+}
+
+.ai-response em {
+  font-style: italic;
+}
+
+.ai-response hr {
+  border: none;
+  border-top: 1px solid var(--md-outline-variant);
+  margin: var(--spacing-4) 0;
+}
+
+.ai-response table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing-3) 0;
+}
+
+.ai-response th, .ai-response td {
+  border: 1px solid var(--md-outline-variant);
+  padding: var(--spacing-2) var(--spacing-3);
+  text-align: left;
+  font-size: var(--text-body-medium);
+}
+
+.ai-response th {
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface);
+  font-weight: var(--font-medium);
+}

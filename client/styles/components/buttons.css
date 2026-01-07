@@ -1,0 +1,337 @@
+/* Material Design 3 - Button styles */
+
+/* Base button - MD3 Filled Button */
+button {
+  position: relative;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-label-large);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.1px;
+  line-height: var(--leading-normal);
+  transition: all var(--duration-short4) var(--easing-standard);
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+button:hover::before {
+  opacity: var(--state-hover);
+}
+
+button:focus-visible::before {
+  opacity: var(--state-focus);
+}
+
+button:active::before {
+  opacity: var(--state-pressed);
+}
+
+button:hover {
+  box-shadow: var(--elevation-1);
+}
+
+button:disabled {
+  background: rgba(230, 224, 233, 0.12);
+  color: rgba(230, 224, 233, 0.38);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button:disabled::before {
+  display: none;
+}
+
+/* Round action buttons - MD3 FAB style */
+.card-mic-btn,
+.card-clear-btn,
+.card-add-btn {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  z-index: 10;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.card-mic-btn::before,
+.card-clear-btn::before,
+.card-add-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+/* Primary FAB - Mic button */
+.card-mic-btn {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  box-shadow: var(--elevation-3);
+}
+
+.card-mic-btn svg {
+  width: 28px;
+  height: 28px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.card-mic-btn:hover {
+  box-shadow: var(--elevation-4);
+}
+
+.card-mic-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.card-mic-btn:active {
+  transform: scale(0.96);
+}
+
+.card-mic-btn.recording {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  animation: pulse 1s infinite;
+}
+
+.card-mic-btn.submit-mode {
+  background: var(--success-container);
+  color: var(--on-success-container);
+}
+
+.card-mic-btn.submit-mode:hover {
+  box-shadow: var(--elevation-4);
+}
+
+.card-mic-btn.processing {
+  background: var(--warning-container);
+  color: var(--on-warning-container);
+  cursor: wait;
+}
+
+.card-mic-btn.processing:hover {
+  transform: none;
+}
+
+.card-mic-btn.processing svg {
+  animation: spin 1s linear infinite;
+}
+
+/* Secondary FABs - Clear and Add buttons */
+.card-clear-btn,
+.card-add-btn {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  box-shadow: var(--elevation-2);
+}
+
+.card-clear-btn {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.card-add-btn {
+  background: var(--info-container);
+  color: var(--on-info-container);
+}
+
+.card-clear-btn svg,
+.card-add-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.card-clear-btn.visible,
+.card-add-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.card-clear-btn:hover,
+.card-add-btn:hover {
+  box-shadow: var(--elevation-3);
+}
+
+.card-clear-btn:hover::before,
+.card-add-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.card-clear-btn:active,
+.card-add-btn:active {
+  transform: scale(0.96);
+}
+
+.card-add-btn.recording {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  animation: pulse 1s infinite;
+}
+
+/* Copy button - MD3 Tonal Button style */
+.copy-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--radius-md);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--duration-short4) var(--easing-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.copy-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.copy-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.copy-btn svg {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.copy-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.copy-btn.copied {
+  background: var(--success-container);
+  color: var(--on-success-container);
+}
+
+/* MD3 Icon Button */
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-short4) var(--easing-standard);
+}
+
+.icon-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  border-radius: inherit;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.icon-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.icon-btn:focus-visible::before {
+  opacity: var(--state-focus);
+}
+
+.icon-btn:active::before {
+  opacity: var(--state-pressed);
+}
+
+.icon-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+/* MD3 Filled Tonal Button */
+.btn-tonal {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.btn-tonal:hover {
+  box-shadow: var(--elevation-1);
+}
+
+/* MD3 Outlined Button */
+.btn-outlined {
+  background: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+}
+
+.btn-outlined:hover {
+  background: rgba(208, 188, 255, 0.08);
+  box-shadow: none;
+}
+
+/* MD3 Text Button */
+.btn-text {
+  background: transparent;
+  color: var(--md-primary);
+  padding: var(--spacing-3) var(--spacing-3);
+}
+
+.btn-text:hover {
+  background: rgba(208, 188, 255, 0.08);
+  box-shadow: none;
+}

@@ -1,0 +1,297 @@
+/* Material Design 3 (Material You) - Dark Theme */
+:root {
+  /* ========================================
+     MD3 Color System - Dark Theme
+     Based on Material Design 3 specifications
+     ======================================== */
+
+  /* Primary Colors */
+  --md-primary: #D0BCFF;
+  --md-on-primary: #381E72;
+  --md-primary-container: #4F378B;
+  --md-on-primary-container: #EADDFF;
+
+  /* Secondary Colors */
+  --md-secondary: #CCC2DC;
+  --md-on-secondary: #332D41;
+  --md-secondary-container: #4A4458;
+  --md-on-secondary-container: #E8DEF8;
+
+  /* Tertiary Colors (Teal accent) */
+  --md-tertiary: #7DD6C2;
+  --md-on-tertiary: #00382E;
+  --md-tertiary-container: #005144;
+  --md-on-tertiary-container: #9AF3DD;
+
+  /* Error Colors */
+  --md-error: #F2B8B5;
+  --md-on-error: #601410;
+  --md-error-container: #8C1D18;
+  --md-on-error-container: #F9DEDC;
+
+  /* Surface Colors - MD3 Tonal Surfaces */
+  --md-surface: #141218;
+  --md-surface-dim: #141218;
+  --md-surface-bright: #3B383E;
+  --md-surface-container-lowest: #0F0D13;
+  --md-surface-container-low: #1D1B20;
+  --md-surface-container: #211F26;
+  --md-surface-container-high: #2B2930;
+  --md-surface-container-highest: #36343B;
+  --md-on-surface: #E6E0E9;
+  --md-on-surface-variant: #CAC4D0;
+  --md-inverse-surface: #E6E0E9;
+  --md-inverse-on-surface: #322F35;
+
+  /* Outline Colors */
+  --md-outline: #938F99;
+  --md-outline-variant: #49454F;
+
+  /* Background */
+  --md-background: #141218;
+  --md-on-background: #E6E0E9;
+
+  /* Scrim */
+  --md-scrim: #000000;
+
+  /* Shadow */
+  --md-shadow: #000000;
+
+  /* ========================================
+     Semantic Aliases (for compatibility)
+     ======================================== */
+
+  /* Background colors */
+  --bg-primary: var(--md-surface);
+  --bg-secondary: var(--md-surface-container);
+  --bg-tertiary: var(--md-surface-dim);
+  --bg-card: var(--md-surface-container);
+  --bg-input: var(--md-surface-container-low);
+  --bg-overlay: rgba(0, 0, 0, 0.32);
+
+  /* Border colors */
+  --border-color: var(--md-outline-variant);
+  --border-light: var(--md-outline);
+  --border-dark: rgba(73, 69, 79, 0.5);
+
+  /* Text colors */
+  --text-primary: var(--md-on-surface);
+  --text-secondary: var(--md-on-surface-variant);
+  --text-tertiary: rgba(230, 224, 233, 0.87);
+  --text-muted: rgba(202, 196, 208, 0.6);
+  --text-placeholder: rgba(202, 196, 208, 0.38);
+
+  /* Brand colors - MD3 Style */
+  --purple: var(--md-primary);
+  --purple-light: #E8DDFF;
+  --purple-dark: var(--md-primary-container);
+  --teal: var(--md-tertiary);
+  --teal-light: #9AF3DD;
+
+  /* Semantic colors - MD3 Extended Colors */
+  --success: #7DD67D;
+  --success-light: #9EF39E;
+  --success-dark: #005313;
+  --success-hover: #006E1C;
+  --success-container: #006E1C;
+  --on-success-container: #9EF39E;
+
+  --danger: var(--md-error);
+  --danger-light: #FFB4AB;
+  --danger-container: var(--md-error-container);
+  --on-danger-container: var(--md-on-error-container);
+
+  --warning: #E8C16D;
+  --warning-light: #FFDFA0;
+  --warning-container: #5C4400;
+  --on-warning-container: #FFDFA0;
+
+  --info: #A5C8FF;
+  --info-light: #D3E4FF;
+  --info-container: #004881;
+  --on-info-container: #D3E4FF;
+
+  --neutral: var(--md-on-surface-variant);
+  --neutral-light: var(--md-outline);
+
+  /* Button colors - MD3 Style */
+  --btn-primary: var(--md-primary);
+  --btn-primary-hover: #E8DDFF;
+  --btn-on-primary: var(--md-on-primary);
+  --btn-secondary: var(--md-secondary-container);
+  --btn-secondary-hover: #5B5569;
+  --btn-on-secondary: var(--md-on-secondary-container);
+
+  /* AI/Service colors */
+  --claude-orange: #FFAB8F;
+  --claude-bg: rgba(255, 171, 143, 0.12);
+  --gemini-blue: #A5C8FF;
+  --gemini-bg: rgba(165, 200, 255, 0.12);
+
+  /* Status colors */
+  --status-connected: #7DD67D;
+  --status-disconnected: #F2B8B5;
+
+  /* ========================================
+     MD3 Typography Scale
+     ======================================== */
+
+  /* Display */
+  --text-display-large: 3.5625rem;   /* 57px */
+  --text-display-medium: 2.8125rem;  /* 45px */
+  --text-display-small: 2.25rem;     /* 36px */
+
+  /* Headline */
+  --text-headline-large: 2rem;       /* 32px */
+  --text-headline-medium: 1.75rem;   /* 28px */
+  --text-headline-small: 1.5rem;     /* 24px */
+
+  /* Title */
+  --text-title-large: 1.375rem;      /* 22px */
+  --text-title-medium: 1rem;         /* 16px */
+  --text-title-small: 0.875rem;      /* 14px */
+
+  /* Label */
+  --text-label-large: 0.875rem;      /* 14px */
+  --text-label-medium: 0.75rem;      /* 12px */
+  --text-label-small: 0.6875rem;     /* 11px */
+
+  /* Body */
+  --text-body-large: 1rem;           /* 16px */
+  --text-body-medium: 0.875rem;      /* 14px */
+  --text-body-small: 0.75rem;        /* 12px */
+
+  /* Legacy text sizes (mapped to MD3) */
+  --text-xs: var(--text-label-small);
+  --text-sm: var(--text-label-medium);
+  --text-base: var(--text-body-medium);
+  --text-md: var(--text-body-large);
+  --text-lg: var(--text-title-medium);
+  --text-xl: var(--text-title-large);
+  --text-2xl: var(--text-headline-small);
+  --text-3xl: var(--text-headline-medium);
+  --text-4xl: var(--text-headline-large);
+
+  /* Font weights */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Letter spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.1em;
+
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* ========================================
+     MD3 Shape System
+     ======================================== */
+
+  --radius-none: 0;
+  --radius-xs: 4px;       /* Extra small */
+  --radius-sm: 8px;       /* Small */
+  --radius-md: 12px;      /* Medium */
+  --radius-lg: 16px;      /* Large */
+  --radius-xl: 20px;      /* Extra large */
+  --radius-2xl: 28px;     /* Extra extra large */
+  --radius-full: 9999px;  /* Full (pill) */
+
+  /* ========================================
+     MD3 Elevation (using shadows)
+     ======================================== */
+
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --elevation-3: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+  --elevation-4: 0 2px 3px rgba(0, 0, 0, 0.3), 0 6px 10px 4px rgba(0, 0, 0, 0.15);
+  --elevation-5: 0 4px 4px rgba(0, 0, 0, 0.3), 0 8px 12px 6px rgba(0, 0, 0, 0.15);
+
+  /* Legacy shadows (mapped to MD3) */
+  --shadow-sm: var(--elevation-1);
+  --shadow-md: var(--elevation-2);
+  --shadow-lg: var(--elevation-3);
+
+  /* ========================================
+     MD3 State Layers
+     ======================================== */
+
+  --state-hover: 0.08;
+  --state-focus: 0.12;
+  --state-pressed: 0.12;
+  --state-dragged: 0.16;
+
+  /* ========================================
+     Spacing (4px base unit - MD3 standard)
+     ======================================== */
+
+  --spacing-0: 0;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* Legacy spacing (mapped) */
+  --spacing-xs: var(--spacing-1);
+  --spacing-sm: var(--spacing-2);
+  --spacing-md: var(--spacing-3);
+  --spacing-lg: var(--spacing-4);
+  --spacing-xl: var(--spacing-5);
+  --spacing-2xl: var(--spacing-6);
+
+  /* ========================================
+     Transitions (MD3 Motion)
+     ======================================== */
+
+  /* Duration */
+  --duration-short1: 50ms;
+  --duration-short2: 100ms;
+  --duration-short3: 150ms;
+  --duration-short4: 200ms;
+  --duration-medium1: 250ms;
+  --duration-medium2: 300ms;
+  --duration-medium3: 350ms;
+  --duration-medium4: 400ms;
+  --duration-long1: 450ms;
+  --duration-long2: 500ms;
+  --duration-long3: 550ms;
+  --duration-long4: 600ms;
+
+  /* Easing */
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* Legacy transitions */
+  --transition-fast: var(--duration-short4);
+  --transition-normal: var(--duration-medium2);
+
+  /* ========================================
+     Z-Index Layers
+     ======================================== */
+
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-page: 1000;
+  --z-modal-backdrop: 1400;
+  --z-modal: 1500;
+  --z-dialog: 2000;
+  --z-status: 9999;
+}

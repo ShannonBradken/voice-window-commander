@@ -1,0 +1,221 @@
+/* Material Design 3 - Card styles */
+
+#windows-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-4);
+}
+
+/* MD3 Card - Filled variant */
+.window-card {
+  position: relative;
+  background: var(--md-surface-container);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.window-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-on-surface);
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.window-card:hover {
+  background: var(--md-surface-container-high);
+  box-shadow: var(--elevation-1);
+}
+
+.window-card:hover::before {
+  opacity: var(--state-hover);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.card-content {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.card-content:hover {
+  opacity: 0.87;
+}
+
+.window-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+
+.card-info {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.window-title {
+  font-weight: var(--font-medium);
+  font-size: var(--text-title-medium);
+  letter-spacing: 0.15px;
+  color: var(--md-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--leading-normal);
+  width: 100%;
+  flex: 1;
+}
+
+/* Card close button - MD3 Icon Button */
+.card-close-btn {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: all var(--duration-short4) var(--easing-standard);
+  overflow: hidden;
+}
+
+.card-close-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.card-close-btn svg {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.window-card:hover .card-close-btn {
+  opacity: 1;
+}
+
+.card-close-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.card-close-btn:active {
+  transform: scale(0.92);
+}
+
+/* Card text area */
+.card-text-area {
+  border-top: 1px solid var(--md-outline-variant);
+  padding-top: var(--spacing-3);
+  margin-top: var(--spacing-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.card-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  z-index: 10;
+}
+
+/* MD3 Text field style for card text */
+.card-text {
+  flex: 1;
+  min-height: 44px;
+  min-width: 0;
+  padding: var(--spacing-3);
+  background: var(--md-surface-container-highest);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+  word-wrap: break-word;
+  line-height: var(--leading-normal);
+}
+
+.card-text:empty::before {
+  content: 'Tap mic to speak...';
+  color: var(--md-on-surface-variant);
+  font-style: normal;
+}
+
+.card-text.transcribing::before {
+  content: 'Transcribing...';
+  color: var(--warning);
+}
+
+.card-text.transcribing::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: var(--spacing-2);
+  border: 2px solid var(--warning);
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+}
+
+/* MD3 Card - Outlined variant */
+.card-outlined {
+  background: var(--md-surface);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.card-outlined:hover {
+  background: var(--md-surface);
+  border-color: var(--md-outline);
+}
+
+/* MD3 Card - Elevated variant */
+.card-elevated {
+  background: var(--md-surface-container-low);
+  box-shadow: var(--elevation-1);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--elevation-2);
+}

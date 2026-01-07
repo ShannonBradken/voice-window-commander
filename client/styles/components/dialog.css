@@ -1,0 +1,181 @@
+/* Material Design 3 - Dialog styles */
+
+/* MD3 Scrim (Overlay) */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-dialog);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--duration-medium2) var(--easing-emphasized-decelerate),
+              visibility var(--duration-medium2) var(--easing-emphasized-decelerate);
+}
+
+.dialog-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* MD3 Dialog */
+.dialog {
+  background: var(--md-surface-container-high);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-6);
+  max-width: 400px;
+  width: calc(100% - var(--spacing-8));
+  transform: scale(0.85);
+  opacity: 0;
+  transition: transform var(--duration-medium3) var(--easing-emphasized-decelerate),
+              opacity var(--duration-medium3) var(--easing-emphasized-decelerate);
+  box-shadow: var(--elevation-3);
+}
+
+.dialog-overlay.visible .dialog {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Dialog Header - MD3 Headline Small */
+.dialog-header {
+  font-size: var(--text-headline-small);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-tight);
+  letter-spacing: 0;
+  margin-bottom: var(--spacing-4);
+  color: var(--md-on-surface);
+}
+
+/* Dialog Content */
+.dialog-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4);
+  background: var(--md-surface-container-highest);
+  border-radius: var(--radius-lg);
+}
+
+.dialog-icon img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+}
+
+.dialog-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-title {
+  font-weight: var(--font-medium);
+  font-size: var(--text-title-medium);
+  letter-spacing: 0.15px;
+  margin-bottom: var(--spacing-1);
+  color: var(--md-on-surface);
+  word-break: break-word;
+}
+
+.dialog-path {
+  font-size: var(--text-body-small);
+  letter-spacing: 0.4px;
+  color: var(--md-on-surface-variant);
+  word-break: break-all;
+}
+
+/* Dialog Buttons - MD3 style */
+.dialog-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+  justify-content: flex-end;
+}
+
+.dialog-cancel,
+.dialog-confirm {
+  min-width: 64px;
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--text-label-large);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.1px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--duration-short4) var(--easing-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.dialog-cancel::before,
+.dialog-confirm::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.dialog-cancel:hover::before,
+.dialog-confirm:hover::before {
+  opacity: var(--state-hover);
+}
+
+/* Cancel - MD3 Text Button */
+.dialog-cancel {
+  background: transparent;
+  color: var(--md-primary);
+  border: none;
+}
+
+.dialog-cancel:hover {
+  background: rgba(208, 188, 255, 0.08);
+}
+
+/* Confirm - MD3 Filled Button (Error variant) */
+.dialog-confirm {
+  background: var(--md-error);
+  color: var(--md-on-error);
+  border: none;
+}
+
+.dialog-confirm:hover {
+  box-shadow: var(--elevation-1);
+}
+
+/* Supporting text for dialogs */
+.dialog-text {
+  font-size: var(--text-body-medium);
+  letter-spacing: 0.25px;
+  line-height: var(--leading-normal);
+  color: var(--md-on-surface-variant);
+  margin-bottom: var(--spacing-6);
+}
+
+/* MD3 Full-screen dialog (for mobile) */
+@media (max-width: 600px) {
+  .dialog {
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dialog-content {
+    flex: 1;
+    align-items: flex-start;
+  }
+
+  .dialog-buttons {
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--md-outline-variant);
+  }
+}

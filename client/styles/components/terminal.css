@@ -1,0 +1,368 @@
+/* Material Design 3 - Terminal component styles */
+
+/* Terminal Card - MD3 Card with surface tint */
+.terminal-card {
+  background: var(--md-surface-container-lowest);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  box-shadow: var(--elevation-1);
+}
+
+/* Terminal Header - MD3 Top App Bar style */
+.terminal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--md-surface-container);
+  border-bottom: 1px solid var(--md-outline-variant);
+  min-height: 56px;
+}
+
+.terminal-card-type {
+  font-size: var(--text-title-medium);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.15px;
+  color: var(--md-on-surface);
+  flex: 1;
+  text-align: center;
+}
+
+/* Close button - MD3 Icon Button */
+.terminal-card-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-short4) var(--easing-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-card-close-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  border-radius: inherit;
+}
+
+.terminal-card-close-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.terminal-card-close-btn:hover {
+  color: var(--md-error);
+}
+
+.terminal-card-close-btn svg {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Terminal display area */
+.terminal-card-display {
+  flex: 1;
+  overflow: hidden;
+  padding: var(--spacing-2);
+  cursor: pointer;
+  background: var(--md-surface-container-lowest);
+}
+
+.terminal-card-display .xterm {
+  height: 100%;
+}
+
+.terminal-card-display .xterm-viewport {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Terminal Voice Bar - MD3 Bottom App Bar style */
+.terminal-card-voice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--md-surface-container);
+  border-top: 1px solid var(--md-outline-variant);
+}
+
+/* Text input - MD3 Text Field style */
+.terminal-card-text {
+  flex: 1;
+  min-height: 40px;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--md-surface-container-high);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-medium);
+  font-weight: var(--font-regular);
+  letter-spacing: 0.25px;
+  color: var(--md-on-surface);
+  word-wrap: break-word;
+  line-height: var(--leading-normal);
+}
+
+.terminal-card-text:empty::before {
+  content: 'Tap mic to speak...';
+  color: var(--md-on-surface-variant);
+}
+
+.terminal-card-text.transcribing::before {
+  content: 'Transcribing...';
+  color: var(--warning);
+}
+
+.terminal-card-text.transcribing::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: var(--spacing-2);
+  border: 2px solid var(--warning);
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+}
+
+.terminal-card-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Secondary action buttons - MD3 Small FAB */
+.terminal-card-clear-btn,
+.terminal-card-add-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--elevation-2);
+}
+
+.terminal-card-clear-btn::before,
+.terminal-card-add-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.terminal-card-clear-btn {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.terminal-card-add-btn {
+  background: var(--info-container);
+  color: var(--on-info-container);
+}
+
+.terminal-card-clear-btn.visible,
+.terminal-card-add-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.terminal-card-clear-btn:hover,
+.terminal-card-add-btn:hover {
+  box-shadow: var(--elevation-3);
+}
+
+.terminal-card-clear-btn:hover::before,
+.terminal-card-add-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.terminal-card-clear-btn svg,
+.terminal-card-add-btn svg {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-card-add-btn.recording {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  animation: pulse 1s infinite;
+}
+
+/* Primary mic button - MD3 FAB */
+.terminal-card-mic-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--elevation-3);
+}
+
+.terminal-card-mic-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+.terminal-card-mic-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-card-mic-btn:hover {
+  box-shadow: var(--elevation-4);
+}
+
+.terminal-card-mic-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.terminal-card-mic-btn.recording {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  animation: pulse 1s infinite;
+}
+
+.terminal-card-mic-btn.processing {
+  background: var(--warning-container);
+  color: var(--on-warning-container);
+}
+
+.terminal-card-mic-btn.processing svg {
+  animation: spin 1s linear infinite;
+}
+
+.terminal-card-mic-btn.submit-mode {
+  background: var(--success-container);
+  color: var(--on-success-container);
+}
+
+.terminal-card-mic-btn.submit-mode:hover {
+  box-shadow: var(--elevation-4);
+}
+
+/* Expanded Terminal Full Screen */
+.terminal-card.expanded {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-modal);
+  border-radius: 0;
+  margin: 0;
+  animation: expandTerminal var(--duration-medium3) var(--easing-emphasized-decelerate);
+}
+
+.terminal-card.expanded .terminal-card-header {
+  border-radius: 0;
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.terminal-card.expanded .terminal-card-display {
+  flex: 1;
+  height: auto;
+}
+
+.terminal-card.expanded .terminal-card-voice {
+  border-radius: 0;
+}
+
+/* Back button for expanded terminal - MD3 Icon Button */
+.terminal-card-back-btn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  color: var(--md-on-surface);
+  border: none;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-right: var(--spacing-2);
+  border-radius: var(--radius-full);
+  transition: all var(--duration-short4) var(--easing-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-card-back-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+  border-radius: inherit;
+}
+
+.terminal-card-back-btn svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-card-back-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+.terminal-card.expanded .terminal-card-back-btn {
+  display: flex;
+}
+
+.terminal-card.expanded .terminal-card-close-btn {
+  display: none;
+}

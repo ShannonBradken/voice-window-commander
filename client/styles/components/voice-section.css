@@ -1,0 +1,104 @@
+/* Material Design 3 - Voice Section */
+
+#voice-section {
+  background: var(--md-surface-container);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  margin-top: var(--spacing-5);
+  box-shadow: var(--elevation-1);
+}
+
+#voice-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Record button - MD3 Extended FAB style */
+#record-btn {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  padding: var(--spacing-4) var(--spacing-6);
+  font-size: var(--text-label-large);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.1px;
+  user-select: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-3);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-medium2) var(--easing-emphasized);
+}
+
+#record-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--duration-short4) var(--easing-standard);
+}
+
+#record-btn:hover {
+  box-shadow: var(--elevation-4);
+}
+
+#record-btn:hover::before {
+  opacity: var(--state-hover);
+}
+
+#record-btn:active {
+  transform: scale(0.98);
+}
+
+#record-btn.recording {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  animation: pulse 1s infinite;
+}
+
+/* Recording indicator - MD3 style */
+#recording-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--md-outline-variant);
+  transition: all var(--duration-medium2) var(--easing-standard);
+}
+
+#recording-indicator.active {
+  background: var(--md-error);
+  box-shadow: 0 0 12px var(--md-error);
+}
+
+/* Transcription section */
+#transcription {
+  border-top: 1px solid var(--md-outline-variant);
+  padding-top: var(--spacing-4);
+}
+
+#transcription-label {
+  font-size: var(--text-label-medium);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+  margin-bottom: var(--spacing-2);
+}
+
+#transcription-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+#transcription-text {
+  font-size: var(--text-title-large);
+  font-weight: var(--font-regular);
+  letter-spacing: 0;
+  line-height: var(--leading-normal);
+  min-height: 1.5em;
+  color: var(--md-on-surface);
+  flex: 1;
+}
