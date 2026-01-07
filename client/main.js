@@ -22,14 +22,11 @@ let aiQueryText = ''; // Text for AI query
 let aiProcessing = false; // Whether AI query is in progress
 
 // Terminal state
-const terminals = new Map(); // termId -> { terminal, fitAddon, element }
-let activeTerminalId = null;
-let terminalCounter = 0;
+const terminals = new Map(); // termId -> { terminal, fitAddon, element, type, readOnly }
+const terminalVoiceStates = new Map(); // termId -> { text, recording, transcribing }
 let pendingTerminalCommand = null; // Command to run after terminal is created
 let pendingTerminalReadOnly = false; // Whether the next terminal should be read-only
-let terminalVoiceRecording = false; // Whether we're recording voice for terminal input
-let terminalVoiceText = ''; // Accumulated voice text for terminal
-let terminalVoiceTranscribing = false; // Whether terminal voice is transcribing
+let currentVoiceTerminalId = null; // Which terminal is currently recording voice
 
 function connect() {
   ws = new WebSocket(WS_URL);
@@ -186,20 +183,44 @@ function handleMessage(msg) {
       break;
 
     case 'terminalTranscription':
-      // Voice transcription for terminal - accumulate text
-      terminalVoiceRecording = false;
-      terminalVoiceTranscribing = false;
-      if (msg.text) {
-        terminalVoiceText += (terminalVoiceText ? ' ' : '') + msg.text;
+      // Voice transcription for terminal - accumulate text for specific terminal
+      if (currentVoiceTerminalId !== null) {
+        const voiceState = terminalVoiceStates.get(currentVoiceTerminalId);
+        if (voiceState) {
+          voiceState.recording = false;
+          voiceState.transcribing = false;
+          if (msg.text) {
+            voiceState.text += (voiceState.text ? ' ' : '') + msg.text;
+          }
+          updateTerminalCardVoiceUI(currentVoiceTerminalId);
+        }
+        currentVoiceTerminalId = null;
       }
-      updateTerminalVoiceUI();
       break;
 
     case 'terminalTranscriptionError':
-      terminalVoiceRecording = false;
-      terminalVoiceTranscribing = false;
-      updateTerminalVoiceUI();
+      if (currentVoiceTerminalId !== null) {
+        const voiceState = terminalVoiceStates.get(currentVoiceTerminalId);
+        if (voiceState) {
+          voiceState.recording = false;
+          voiceState.transcribing = false;
+          updateTerminalCardVoiceUI(currentVoiceTerminalId);
+        }
+        currentVoiceTerminalId = null;
+      }
       console.error('Terminal transcription error:', msg.error);
+      break;
+
+    // Context folder messages
+    case 'contextFolders':
+      renderContextFolders(msg.data);
+      break;
+
+    case 'contextFoldersError':
+      console.error('Context scan error:', msg.error);
+      document.getElementById('context-loading').style.display = 'none';
+      document.getElementById('context-empty').style.display = 'flex';
+      document.getElementById('context-empty').querySelector('p').textContent = 'Error scanning folders';
       break;
   }
 }
@@ -936,87 +957,59 @@ function toggleAutoRefresh() {
 }
 
 // Terminal Functions
-function showTerminalPanel() {
-  const panel = document.getElementById('terminal-panel');
-  panel.classList.add('visible');
-  panel.classList.remove('minimized');
-  // Create first terminal if none exist
-  if (terminals.size === 0) {
-    createTerminal();
-  } else if (activeTerminalId) {
-    // Fit the active terminal
-    const term = terminals.get(activeTerminalId);
-    if (term) {
-      setTimeout(() => term.fitAddon.fit(), 100);
-    }
+function showTerminalsPage() {
+  const page = document.getElementById('terminals-page');
+  page.classList.add('visible');
+  // Fit all visible terminals
+  terminals.forEach((term) => {
+    setTimeout(() => term.fitAddon.fit(), 100);
+  });
+}
+
+function hideTerminalsPage() {
+  const page = document.getElementById('terminals-page');
+  page.classList.remove('visible');
+}
+
+function launchTerminal(type) {
+  // Set the command to run based on type
+  if (type === 'claude') {
+    pendingTerminalCommand = 'claude --dangerously-skip-permissions';
+    pendingTerminalReadOnly = true;
+  } else if (type === 'gemini') {
+    pendingTerminalCommand = 'gemini';
+    pendingTerminalReadOnly = true;
+  } else {
+    pendingTerminalCommand = null;
+    pendingTerminalReadOnly = false;
   }
+  createTerminal(type);
 }
 
-function hideTerminalPanel() {
-  const panel = document.getElementById('terminal-panel');
-  panel.classList.remove('visible');
-  panel.classList.remove('minimized');
-}
+// Per-terminal voice input functions
+function updateTerminalCardVoiceUI(termId) {
+  const voiceState = terminalVoiceStates.get(termId);
+  if (!voiceState) return;
 
-function minimizeTerminalPanel() {
-  const panel = document.getElementById('terminal-panel');
-  panel.classList.add('minimized');
-}
+  const card = document.querySelector(`.terminal-card[data-term-id="${termId}"]`);
+  if (!card) return;
 
-function expandTerminalPanel() {
-  const panel = document.getElementById('terminal-panel');
-  if (panel.classList.contains('minimized')) {
-    panel.classList.remove('minimized');
-    // Fit the active terminal after expanding
-    if (activeTerminalId) {
-      const term = terminals.get(activeTerminalId);
-      if (term) {
-        setTimeout(() => term.fitAddon.fit(), 100);
-      }
-    }
-  }
-}
-
-function launchClaude() {
-  // Set the command to run after terminal is created
-  pendingTerminalCommand = 'claude --dangerously-skip-permissions';
-  pendingTerminalReadOnly = true; // Make Claude terminal read-only
-  // Open terminal panel and create a new terminal
-  const panel = document.getElementById('terminal-panel');
-  panel.classList.add('visible');
-  panel.classList.remove('minimized');
-  createTerminal();
-}
-
-function launchGemini() {
-  // Set the command to run after terminal is created
-  pendingTerminalCommand = 'gemini';
-  pendingTerminalReadOnly = true; // Make Gemini terminal read-only
-  // Open terminal panel and create a new terminal
-  const panel = document.getElementById('terminal-panel');
-  panel.classList.add('visible');
-  panel.classList.remove('minimized');
-  createTerminal();
-}
-
-// Terminal voice input
-function updateTerminalVoiceUI() {
-  const textEl = document.getElementById('terminal-voice-text');
-  const clearBtn = document.getElementById('terminal-clear-btn');
-  const addBtn = document.getElementById('terminal-add-btn');
-  const micBtn = document.getElementById('terminal-mic-btn');
+  const textEl = card.querySelector('.terminal-card-text');
+  const clearBtn = card.querySelector('.terminal-card-clear-btn');
+  const addBtn = card.querySelector('.terminal-card-add-btn');
+  const micBtn = card.querySelector('.terminal-card-mic-btn');
 
   if (!textEl || !clearBtn || !addBtn || !micBtn) return;
 
-  const hasText = terminalVoiceText.length > 0;
+  const hasText = voiceState.text.length > 0;
   const micIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
   const checkIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
 
   // Update text display
-  textEl.textContent = terminalVoiceText;
+  textEl.textContent = voiceState.text;
 
   // Update transcribing state
-  if (terminalVoiceTranscribing) {
+  if (voiceState.transcribing) {
     textEl.classList.add('transcribing');
   } else {
     textEl.classList.remove('transcribing');
@@ -1032,11 +1025,11 @@ function updateTerminalVoiceUI() {
   }
 
   // Update mic button state
-  if (terminalVoiceRecording) {
+  if (voiceState.recording) {
     micBtn.classList.add('recording');
     micBtn.classList.remove('processing', 'submit-mode');
     micBtn.innerHTML = micIcon;
-  } else if (terminalVoiceTranscribing) {
+  } else if (voiceState.transcribing) {
     micBtn.classList.add('processing');
     micBtn.classList.remove('recording', 'submit-mode');
     micBtn.innerHTML = micIcon;
@@ -1050,52 +1043,59 @@ function updateTerminalVoiceUI() {
   }
 
   // Update add button recording state
-  if (terminalVoiceRecording && hasText) {
+  if (voiceState.recording && hasText) {
     addBtn.classList.add('recording');
   } else {
     addBtn.classList.remove('recording');
   }
 }
 
-function toggleTerminalVoiceRecording(btn) {
-  if (!activeTerminalId) return; // No active terminal
+function toggleTerminalCardVoice(termId, btn) {
+  const voiceState = terminalVoiceStates.get(termId);
+  if (!voiceState) return;
 
-  const hasText = terminalVoiceText.length > 0;
-  const isMicBtn = btn && btn.id === 'terminal-mic-btn';
+  const hasText = voiceState.text.length > 0;
+  const isMicBtn = btn && btn.classList.contains('terminal-card-mic-btn');
 
   // If has text and clicking main mic (not recording), submit
-  if (hasText && isMicBtn && !terminalVoiceRecording) {
-    submitTerminalVoice();
+  if (hasText && isMicBtn && !voiceState.recording) {
+    submitTerminalCardVoice(termId);
     return;
   }
 
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     // Stop recording
-    terminalVoiceTranscribing = true;
-    terminalVoiceRecording = false;
+    voiceState.transcribing = true;
+    voiceState.recording = false;
+    currentVoiceTerminalId = termId;
     mediaRecorder.stop();
-    updateTerminalVoiceUI();
+    updateTerminalCardVoiceUI(termId);
   } else if (mediaRecorder && mediaRecorder.state === 'inactive') {
-    // Start recording for terminal
+    // Start recording for this terminal
     activeWindowId = 'terminal-voice';
     activeMicBtn = btn;
-    terminalVoiceRecording = true;
+    voiceState.recording = true;
+    currentVoiceTerminalId = termId;
     audioChunks = [];
     mediaRecorder.start();
-    updateTerminalVoiceUI();
+    updateTerminalCardVoiceUI(termId);
   }
 }
 
-function clearTerminalVoice() {
-  terminalVoiceText = '';
-  updateTerminalVoiceUI();
+function clearTerminalCardVoice(termId) {
+  const voiceState = terminalVoiceStates.get(termId);
+  if (voiceState) {
+    voiceState.text = '';
+    updateTerminalCardVoiceUI(termId);
+  }
 }
 
-function submitTerminalVoice() {
-  if (!activeTerminalId || !terminalVoiceText) return;
+function submitTerminalCardVoice(termId) {
+  const voiceState = terminalVoiceStates.get(termId);
+  if (!voiceState || !voiceState.text) return;
 
   // Get terminal type to determine appropriate line ending
-  const terminalData = terminals.get(activeTerminalId);
+  const terminalData = terminals.get(termId);
   const terminalType = terminalData?.terminalType || 'regular';
 
   // Claude uses \n, Gemini uses \r
@@ -1106,48 +1106,108 @@ function submitTerminalVoice() {
     // First send the text
     ws.send(JSON.stringify({
       type: 'terminalInput',
-      termId: activeTerminalId,
-      data: terminalVoiceText
+      termId: termId,
+      data: voiceState.text
     }));
     // Then send Enter key (appropriate for terminal type)
     ws.send(JSON.stringify({
       type: 'terminalInput',
-      termId: activeTerminalId,
+      termId: termId,
       data: lineEnding
     }));
   }
 
   // Clear text
-  terminalVoiceText = '';
-  updateTerminalVoiceUI();
+  voiceState.text = '';
+  updateTerminalCardVoiceUI(termId);
 }
 
-function createTerminal() {
+function createTerminal(type = 'regular') {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    const container = document.getElementById('terminal-container');
-    const cols = Math.floor((container.clientWidth - 16) / 9); // Approximate char width
-    const rows = Math.floor((container.clientHeight - 16) / 17); // Approximate char height
+    // Use reasonable defaults for card-based terminals
     ws.send(JSON.stringify({
       type: 'terminalCreate',
-      cols: cols || 80,
-      rows: rows || 24
+      cols: 80,
+      rows: 12,
+      terminalType: type
     }));
   }
 }
 
 function onTerminalCreated(termId) {
-  const container = document.getElementById('terminal-container');
   const isReadOnly = pendingTerminalReadOnly;
   const command = pendingTerminalCommand; // Capture before reset
   pendingTerminalReadOnly = false; // Reset flag
 
-  // Create terminal element
-  const termElement = document.createElement('div');
-  termElement.className = 'terminal-instance';
-  termElement.id = `terminal-${termId}`;
-  container.appendChild(termElement);
+  // Determine terminal type for line ending handling
+  let terminalType = 'regular';
+  if (command && command.includes('claude')) terminalType = 'claude';
+  else if (command && command.includes('gemini')) terminalType = 'gemini';
 
-  // Create xterm instance
+  // Get label based on type
+  let typeLabel = 'Terminal';
+  if (terminalType === 'claude') typeLabel = 'Claude';
+  else if (terminalType === 'gemini') typeLabel = 'Gemini';
+
+  // Hide empty state message
+  const emptyState = document.getElementById('terminals-empty');
+  emptyState.style.display = 'none';
+
+  // Create terminal card
+  const terminalsList = document.getElementById('terminals-list');
+  const card = document.createElement('div');
+  card.className = 'terminal-card';
+  card.dataset.termId = termId;
+
+  card.innerHTML = `
+    <div class="terminal-card-header">
+      <button class="terminal-card-back-btn" title="Back">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      </button>
+      <span class="terminal-card-type">${typeLabel}</span>
+      <button class="terminal-card-close-btn" title="Close">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <div class="terminal-card-display"></div>
+    <div class="terminal-card-voice">
+      <div class="terminal-card-text"></div>
+      <div class="terminal-card-buttons">
+        <button class="terminal-card-clear-btn" title="Clear">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <button class="terminal-card-add-btn" title="Add more">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        </button>
+        <button class="terminal-card-mic-btn" title="Voice input">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Wire up card buttons
+  card.querySelector('.terminal-card-close-btn').onclick = () => requestCloseTerminal(termId);
+  card.querySelector('.terminal-card-back-btn').onclick = (e) => {
+    e.stopPropagation();
+    collapseTerminal(termId);
+  };
+  card.querySelector('.terminal-card-clear-btn').onclick = () => clearTerminalCardVoice(termId);
+  card.querySelector('.terminal-card-add-btn').onclick = (e) => toggleTerminalCardVoice(termId, e.currentTarget);
+  card.querySelector('.terminal-card-mic-btn').onclick = (e) => toggleTerminalCardVoice(termId, e.currentTarget);
+
+  // Click on display area to expand
+  card.querySelector('.terminal-card-display').onclick = () => {
+    if (!card.classList.contains('expanded')) {
+      expandTerminal(termId);
+    }
+  };
+
+  terminalsList.appendChild(card);
+
+  // Create xterm instance in the card's display area
+  const termElement = card.querySelector('.terminal-card-display');
+
   const terminal = new Terminal({
     cursorBlink: !isReadOnly,
     cursorStyle: isReadOnly ? 'bar' : 'block',
@@ -1157,7 +1217,7 @@ function onTerminalCreated(termId) {
     theme: {
       background: '#0d0d1a',
       foreground: '#e0e0e0',
-      cursor: isReadOnly ? '#0d0d1a' : '#16a085', // Hide cursor if read-only
+      cursor: isReadOnly ? '#0d0d1a' : '#16a085',
       cursorAccent: '#0d0d1a',
       selection: 'rgba(22, 160, 133, 0.3)',
       black: '#1a1a2e',
@@ -1192,43 +1252,11 @@ function onTerminalCreated(termId) {
     });
   }
 
-  // Determine terminal type for line ending handling
-  let terminalType = 'regular';
-  if (command && command.includes('claude')) terminalType = 'claude';
-  else if (command && command.includes('gemini')) terminalType = 'gemini';
-
   // Store terminal
-  terminals.set(termId, { terminal, fitAddon, element: termElement, readOnly: isReadOnly, terminalType });
+  terminals.set(termId, { terminal, fitAddon, element: termElement, card, readOnly: isReadOnly, terminalType });
 
-  // Create tab
-  const tabsContainer = document.getElementById('terminal-tabs');
-  const tab = document.createElement('div');
-  tab.className = 'terminal-tab';
-  tab.dataset.termId = termId;
-  let tabLabel = `Terminal ${termId}`;
-  if (isReadOnly && command) {
-    if (command.includes('claude')) tabLabel = 'Claude';
-    else if (command.includes('gemini')) tabLabel = 'Gemini';
-  }
-  tab.innerHTML = `
-    <span>${tabLabel}</span>
-    <button class="terminal-tab-close" title="Close">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-    </button>
-  `;
-  tab.addEventListener('click', (e) => {
-    if (!e.target.closest('.terminal-tab-close')) {
-      switchToTerminal(termId);
-    }
-  });
-  tab.querySelector('.terminal-tab-close').addEventListener('click', (e) => {
-    e.stopPropagation();
-    requestCloseTerminal(termId);
-  });
-  tabsContainer.appendChild(tab);
-
-  // Switch to this terminal
-  switchToTerminal(termId);
+  // Initialize voice state for this terminal
+  terminalVoiceStates.set(termId, { text: '', recording: false, transcribing: false });
 
   // Fit after a short delay
   setTimeout(() => {
@@ -1259,26 +1287,44 @@ function onTerminalCreated(termId) {
   }, 100);
 }
 
-function switchToTerminal(termId) {
-  // Update active state
-  activeTerminalId = termId;
+function expandTerminal(termId) {
+  const term = terminals.get(termId);
+  if (!term || !term.card) return;
 
-  // Update tabs
-  document.querySelectorAll('.terminal-tab').forEach(tab => {
-    tab.classList.toggle('active', parseInt(tab.dataset.termId) === termId);
-  });
+  term.card.classList.add('expanded');
 
-  // Update terminal visibility
-  terminals.forEach((term, id) => {
-    term.element.classList.toggle('active', id === termId);
-    if (id === termId) {
-      // Only focus if not read-only (prevents keyboard on mobile)
-      if (!term.readOnly) {
-        term.terminal.focus();
-      }
-      term.fitAddon.fit();
+  // Refit terminal after expansion animation
+  setTimeout(() => {
+    term.fitAddon.fit();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'terminalResize',
+        termId,
+        cols: term.terminal.cols,
+        rows: term.terminal.rows
+      }));
     }
-  });
+  }, 350);
+}
+
+function collapseTerminal(termId) {
+  const term = terminals.get(termId);
+  if (!term || !term.card) return;
+
+  term.card.classList.remove('expanded');
+
+  // Refit terminal after collapse
+  setTimeout(() => {
+    term.fitAddon.fit();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'terminalResize',
+        termId,
+        cols: term.terminal.cols,
+        rows: term.terminal.rows
+      }));
+    }
+  }, 350);
 }
 
 function requestCloseTerminal(termId) {
@@ -1291,40 +1337,291 @@ function closeTerminal(termId) {
   const term = terminals.get(termId);
   if (term) {
     term.terminal.dispose();
-    term.element.remove();
+    if (term.card) term.card.remove();
     terminals.delete(termId);
   }
 
-  // Remove tab
-  const tab = document.querySelector(`.terminal-tab[data-term-id="${termId}"]`);
-  if (tab) tab.remove();
+  // Remove voice state
+  terminalVoiceStates.delete(termId);
 
-  // Switch to another terminal or close panel
-  if (terminals.size > 0) {
-    const nextTermId = terminals.keys().next().value;
-    switchToTerminal(nextTermId);
-  } else {
-    activeTerminalId = null;
-    hideTerminalPanel();
+  // Show empty state if no terminals left
+  if (terminals.size === 0) {
+    const emptyState = document.getElementById('terminals-empty');
+    emptyState.style.display = '';
   }
 }
 
-// Handle window resize for terminals
-window.addEventListener('resize', () => {
-  if (activeTerminalId) {
-    const term = terminals.get(activeTerminalId);
-    if (term) {
-      term.fitAddon.fit();
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'terminalResize',
-          termId: activeTerminalId,
-          cols: term.terminal.cols,
-          rows: term.terminal.rows
-        }));
-      }
-    }
+// Context Listing Page Functions
+function showContextPage() {
+  const page = document.getElementById('context-page');
+  page.classList.add('visible');
+  // Start scanning
+  scanContextFolders();
+}
+
+function hideContextPage() {
+  const page = document.getElementById('context-page');
+  page.classList.remove('visible');
+}
+
+function scanContextFolders() {
+  const loading = document.getElementById('context-loading');
+  const empty = document.getElementById('context-empty');
+  const refreshBtn = document.getElementById('context-refresh-btn');
+
+  // Show loading, hide empty
+  loading.style.display = 'flex';
+  empty.style.display = 'none';
+  refreshBtn.classList.add('spinning');
+
+  // Clear existing cards
+  const list = document.getElementById('context-list');
+  list.querySelectorAll('.context-card').forEach(card => card.remove());
+
+  // Request scan from server
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'scanContextFolders', rootPath: 'D:\\' }));
   }
+}
+
+function renderContextFolders(folders) {
+  const loading = document.getElementById('context-loading');
+  const empty = document.getElementById('context-empty');
+  const list = document.getElementById('context-list');
+  const refreshBtn = document.getElementById('context-refresh-btn');
+
+  loading.style.display = 'none';
+  refreshBtn.classList.remove('spinning');
+
+  // Clear existing content
+  list.querySelectorAll('.context-card, .context-section').forEach(el => el.remove());
+
+  if (folders.length === 0) {
+    empty.style.display = 'flex';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  // Group folders by path existence
+  const existingFolders = folders.filter(f => f.pathExists);
+  const missingFolders = folders.filter(f => !f.pathExists);
+
+  // Render existing projects section
+  if (existingFolders.length > 0) {
+    const existingSection = document.createElement('div');
+    existingSection.className = 'context-section';
+    existingSection.innerHTML = `
+      <div class="context-section-header" data-expanded="true">
+        <svg class="expand-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        <span class="section-title">Active Projects</span>
+        <span class="section-count">${existingFolders.length}</span>
+      </div>
+      <div class="context-section-content"></div>
+    `;
+    list.appendChild(existingSection);
+
+    const existingContent = existingSection.querySelector('.context-section-content');
+    existingFolders.forEach(folder => {
+      existingContent.appendChild(createContextCard(folder));
+    });
+
+    // Wire up section expand/collapse
+    const header = existingSection.querySelector('.context-section-header');
+    header.onclick = () => toggleSection(existingSection);
+  }
+
+  // Render missing projects section
+  if (missingFolders.length > 0) {
+    const missingSection = document.createElement('div');
+    missingSection.className = 'context-section missing';
+    missingSection.innerHTML = `
+      <div class="context-section-header" data-expanded="false">
+        <svg class="expand-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        <span class="section-title">Archived / Deleted Projects</span>
+        <span class="section-count">${missingFolders.length}</span>
+      </div>
+      <div class="context-section-content" style="display: none;"></div>
+    `;
+    list.appendChild(missingSection);
+
+    const missingContent = missingSection.querySelector('.context-section-content');
+    missingFolders.forEach(folder => {
+      missingContent.appendChild(createContextCard(folder));
+    });
+
+    // Wire up section expand/collapse
+    const header = missingSection.querySelector('.context-section-header');
+    header.onclick = () => toggleSection(missingSection);
+  }
+}
+
+function toggleSection(section) {
+  const header = section.querySelector('.context-section-header');
+  const content = section.querySelector('.context-section-content');
+  const isExpanded = header.dataset.expanded === 'true';
+
+  if (isExpanded) {
+    header.dataset.expanded = 'false';
+    content.style.display = 'none';
+  } else {
+    header.dataset.expanded = 'true';
+    content.style.display = 'flex';
+  }
+}
+
+function createContextCard(folder) {
+  const card = document.createElement('div');
+  card.className = 'context-card' + (folder.pathExists ? '' : ' missing');
+
+  // Build badges HTML
+  let badgesHtml = '';
+  if (folder.hasClaude) {
+    badgesHtml += '<span class="context-badge claude">Claude</span>';
+  }
+  if (folder.hasGemini) {
+    badgesHtml += '<span class="context-badge gemini">Gemini</span>';
+  }
+
+  // Build action buttons based on available contexts (only if path exists)
+  let actionsHtml = '';
+  if (folder.pathExists) {
+    actionsHtml += `
+      <button class="context-action-btn claude-btn" data-path="${folder.path}" data-type="claude">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        Claude
+      </button>`;
+    if (folder.hasGemini) {
+      actionsHtml += `
+        <button class="context-action-btn gemini-btn" data-path="${folder.path}" data-type="gemini">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21L12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg>
+          Gemini
+        </button>`;
+    }
+    actionsHtml += `
+      <button class="context-action-btn terminal-btn" data-path="${folder.path}" data-type="terminal">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.57 9H8.4l3.3 3.3c.39.39.39 1.03 0 1.42L8.42 17H5.59l4-4z"/></svg>
+        Terminal
+      </button>`;
+  }
+
+  // Build sessions HTML if available
+  let sessionsHtml = '';
+  if (folder.claudeSessions && folder.claudeSessions.length > 0) {
+    const sessionsListHtml = folder.claudeSessions.slice(0, 10).map(session => {
+      const date = new Date(session.modified);
+      const dateStr = date.toLocaleDateString('en-AU', { day: '2-digit', month: 'short' });
+      const timeStr = date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+      const sizeKb = (session.size / 1024).toFixed(1);
+      return `
+        <div class="session-item" data-session-id="${session.id}">
+          <div class="session-info">
+            <div class="session-summary">${escapeHtml(session.summary)}</div>
+            <div class="session-meta">
+              <span class="session-date">${dateStr} ${timeStr}</span>
+              <span class="session-stats">${session.messageCount} msgs • ${sizeKb}KB</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const moreCount = folder.claudeSessions.length > 10 ? folder.claudeSessions.length - 10 : 0;
+    const moreHtml = moreCount > 0 ? `<div class="session-more">+${moreCount} more sessions</div>` : '';
+
+    sessionsHtml = `
+      <div class="context-sessions">
+        <div class="sessions-header" data-expanded="false">
+          <svg class="expand-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+          <span>${folder.claudeSessions.length} Conversation${folder.claudeSessions.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="sessions-list" style="display: none;">
+          ${sessionsListHtml}
+          ${moreHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  card.innerHTML = `
+    <div class="context-card-header">
+      <div class="context-card-name">${folder.name}</div>
+      <div class="context-card-badges">${badgesHtml}</div>
+    </div>
+    <div class="context-card-path">${folder.path}</div>
+    ${sessionsHtml}
+    ${actionsHtml ? `<div class="context-card-actions">${actionsHtml}</div>` : ''}
+  `;
+
+  // Wire up action buttons
+  card.querySelectorAll('.context-action-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const path = btn.dataset.path;
+      const type = btn.dataset.type;
+      launchContextTerminal(path, type);
+    };
+  });
+
+  // Wire up sessions expand/collapse
+  const sessionsHeader = card.querySelector('.sessions-header');
+  if (sessionsHeader) {
+    sessionsHeader.onclick = (e) => {
+      e.stopPropagation();
+      const isExpanded = sessionsHeader.dataset.expanded === 'true';
+      const sessionsList = card.querySelector('.sessions-list');
+      if (isExpanded) {
+        sessionsHeader.dataset.expanded = 'false';
+        sessionsList.style.display = 'none';
+      } else {
+        sessionsHeader.dataset.expanded = 'true';
+        sessionsList.style.display = 'block';
+      }
+    };
+  }
+
+  return card;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function launchContextTerminal(folderPath, type) {
+  // Hide context page and show terminals page
+  hideContextPage();
+  showTerminalsPage();
+
+  // Set up the terminal command based on type
+  if (type === 'claude') {
+    pendingTerminalCommand = `cd "${folderPath}" && claude --dangerously-skip-permissions`;
+    pendingTerminalReadOnly = true;
+  } else if (type === 'gemini') {
+    pendingTerminalCommand = `cd "${folderPath}" && gemini`;
+    pendingTerminalReadOnly = true;
+  } else {
+    pendingTerminalCommand = `cd "${folderPath}"`;
+    pendingTerminalReadOnly = false;
+  }
+
+  createTerminal(type);
+}
+
+// Handle window resize for terminals - fit all visible terminals
+window.addEventListener('resize', () => {
+  terminals.forEach((term, termId) => {
+    term.fitAddon.fit();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'terminalResize',
+        termId,
+        cols: term.terminal.cols,
+        rows: term.terminal.rows
+      }));
+    }
+  });
 });
 
 // Initialize
@@ -1377,74 +1674,43 @@ document.getElementById('detail-clear-btn').onclick = () => {
   clearCardText(currentDetailWindowId);
 };
 
-// Terminal panel buttons
-document.getElementById('terminal-fab').onclick = showTerminalPanel;
-document.getElementById('close-terminal-panel').onclick = hideTerminalPanel;
+// Context page buttons
+document.getElementById('context-fab').onclick = showContextPage;
+document.getElementById('context-back').onclick = hideContextPage;
+document.getElementById('context-refresh-btn').onclick = scanContextFolders;
 
-// New terminal dropdown menu
-document.getElementById('new-terminal-btn').onclick = (e) => {
+// Terminals page buttons
+document.getElementById('terminals-fab').onclick = showTerminalsPage;
+document.getElementById('terminals-back').onclick = hideTerminalsPage;
+
+// Terminals add menu
+document.getElementById('terminals-add-btn').onclick = (e) => {
   e.stopPropagation();
-  document.getElementById('new-terminal-menu').classList.toggle('visible');
+  document.getElementById('terminals-add-menu').classList.toggle('visible');
 };
 
-document.getElementById('new-terminal-claude').onclick = (e) => {
+document.getElementById('add-terminal-claude').onclick = (e) => {
   e.stopPropagation();
-  document.getElementById('new-terminal-menu').classList.remove('visible');
-  pendingTerminalCommand = 'claude --dangerously-skip-permissions';
-  pendingTerminalReadOnly = true;
-  createTerminal();
+  document.getElementById('terminals-add-menu').classList.remove('visible');
+  launchTerminal('claude');
 };
 
-document.getElementById('new-terminal-gemini').onclick = (e) => {
+document.getElementById('add-terminal-gemini').onclick = (e) => {
   e.stopPropagation();
-  document.getElementById('new-terminal-menu').classList.remove('visible');
-  pendingTerminalCommand = 'gemini';
-  pendingTerminalReadOnly = true;
-  createTerminal();
+  document.getElementById('terminals-add-menu').classList.remove('visible');
+  launchTerminal('gemini');
 };
 
-document.getElementById('new-terminal-regular').onclick = (e) => {
+document.getElementById('add-terminal-regular').onclick = (e) => {
   e.stopPropagation();
-  document.getElementById('new-terminal-menu').classList.remove('visible');
-  createTerminal();
+  document.getElementById('terminals-add-menu').classList.remove('visible');
+  launchTerminal('regular');
 };
 
-document.getElementById('terminal-mic-btn').onclick = () => toggleTerminalVoiceRecording(document.getElementById('terminal-mic-btn'));
-document.getElementById('terminal-clear-btn').onclick = clearTerminalVoice;
-document.getElementById('terminal-add-btn').onclick = () => toggleTerminalVoiceRecording(document.getElementById('terminal-add-btn'));
-document.getElementById('claude-fab').onclick = launchClaude;
-document.getElementById('gemini-fab').onclick = launchGemini;
-
-// Terminal panel click handler
-document.getElementById('terminal-panel').addEventListener('click', (e) => {
-  const terminalPanel = document.getElementById('terminal-panel');
-
-  // Close dropdown menu when clicking elsewhere
-  if (!e.target.closest('.new-terminal-wrapper')) {
-    document.getElementById('new-terminal-menu').classList.remove('visible');
-  }
-
-  // If minimized and clicking on header, expand the panel
-  if (terminalPanel.classList.contains('minimized')) {
-    const isOnHeader = e.target.closest('.terminal-panel-header');
-    if (isOnHeader && !e.target.closest('.close-terminal-panel-btn')) {
-      expandTerminalPanel();
-    }
-  }
-
-  e.stopPropagation();
-});
-
+// Close add menu when clicking elsewhere on page
 document.addEventListener('click', (e) => {
-  const terminalPanel = document.getElementById('terminal-panel');
-  if (!terminalPanel.classList.contains('visible')) return;
-  if (terminalPanel.classList.contains('minimized')) return; // Already minimized
-
-  // Check if click is on FAB buttons (which open the terminal)
-  const isOnFab = e.target.closest('#terminal-fab, #claude-fab, #gemini-fab');
-
-  if (!isOnFab) {
-    minimizeTerminalPanel();
+  if (!e.target.closest('.terminals-add-wrapper')) {
+    document.getElementById('terminals-add-menu').classList.remove('visible');
   }
 });
 

@@ -134,64 +134,73 @@
       </div>
     </div>
 
-    <!-- Terminal Panel -->
-    <div id="terminal-panel" class="terminal-panel">
-      <div class="terminal-panel-header">
-        <div class="terminal-tabs" id="terminal-tabs"></div>
-        <div class="new-terminal-wrapper">
-          <button id="new-terminal-btn" class="new-terminal-btn" title="New Terminal">
+    <!-- Terminals Page -->
+    <div id="terminals-page" class="terminals-page">
+      <div class="terminals-header">
+        <button id="terminals-back" class="terminals-back-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <h2>Terminals</h2>
+        <div class="terminals-add-wrapper">
+          <button id="terminals-add-btn" class="terminals-add-btn" title="Add Terminal">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           </button>
-          <div id="new-terminal-menu" class="new-terminal-menu">
-            <button id="new-terminal-claude" class="new-terminal-option">
+          <div id="terminals-add-menu" class="terminals-add-menu">
+            <button id="add-terminal-claude" class="terminals-add-option">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
               Claude
             </button>
-            <button id="new-terminal-gemini" class="new-terminal-option">
+            <button id="add-terminal-gemini" class="terminals-add-option">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21L12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg>
               Gemini
             </button>
-            <button id="new-terminal-regular" class="new-terminal-option">
+            <button id="add-terminal-regular" class="terminals-add-option">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.57 9H8.4l3.3 3.3c.39.39.39 1.03 0 1.42L8.42 17H5.59l4-4z"/></svg>
               Terminal
             </button>
           </div>
         </div>
-        <button id="close-terminal-panel" class="close-terminal-panel-btn" title="Close Panel">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
       </div>
-      <div class="terminal-voice-bar">
-        <div id="terminal-voice-text" class="terminal-voice-text"></div>
-        <div class="terminal-voice-buttons">
-          <button id="terminal-clear-btn" class="terminal-clear-btn" title="Clear">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-          </button>
-          <button id="terminal-add-btn" class="terminal-add-btn" title="Add More">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-          </button>
-          <button id="terminal-mic-btn" class="terminal-mic-btn" title="Voice Input">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-          </button>
+      <div id="terminals-list" class="terminals-list">
+        <div id="terminals-empty" class="terminals-empty">
+          <p>No terminals open</p>
+          <p>Tap + to add a terminal</p>
         </div>
       </div>
-      <div class="terminal-container" id="terminal-container"></div>
     </div>
 
-    <!-- Floating Terminal Button -->
-    <button id="terminal-fab" class="terminal-fab" title="Open Terminal">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.57 9H8.4l3.3 3.3c.39.39.39 1.03 0 1.42L8.42 17H5.59l4-4z"/></svg>
-    </button>
+    <!-- Context Listing Page -->
+    <div id="context-page" class="context-page">
+      <div class="context-header">
+        <button id="context-back" class="context-back-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <h2>AI Contexts</h2>
+        <button id="context-refresh-btn" class="context-refresh-btn" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+      </div>
+      <div id="context-list" class="context-list">
+        <div id="context-loading" class="context-loading">
+          <div class="context-spinner"></div>
+          <p>Scanning for AI contexts...</p>
+        </div>
+        <div id="context-empty" class="context-empty" style="display: none;">
+          <p>No AI contexts found</p>
+          <p>Looking for .claude and .gemini folders</p>
+        </div>
+      </div>
+    </div>
 
-    <!-- Claude Button -->
-    <button id="claude-fab" class="claude-fab" title="Open Claude">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-    </button>
-
-    <!-- Gemini Button -->
-    <button id="gemini-fab" class="gemini-fab" title="Open Gemini">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21L12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg>
-    </button>
+    <!-- Floating Buttons -->
+    <div class="fab-container">
+      <button id="context-fab" class="context-fab" title="AI Contexts">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </button>
+      <button id="terminals-fab" class="terminals-fab" title="Open Terminals">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.57 9H8.4l3.3 3.3c.39.39.39 1.03 0 1.42L8.42 17H5.59l4-4z"/></svg>
+      </button>
+    </div>
   </div>
   <script type="module" src="/main.js"></script>
 </body>
